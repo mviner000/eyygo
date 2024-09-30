@@ -1,0 +1,158 @@
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/template/html/v2"
+	"github.com/mviner000/eyymi/config"
+	"github.com/mviner000/eyymi/monitor"
+	"github.com/mviner000/eyymi/reverb" // Import your app statically
+)
+
+var (
+	logger *log.Logger
+)
+
+// Define an interface that all apps should implement
+type App interface {
+	SetupRoutes(app *fiber.App)
+}
+
+func init() {
+	logger = config.GetLogger()
+	reverb.SetLogger(logger)
+}
+
+func main() {
+	// Your fiber app setup
+	app := fiber.New()
+
+	// Assume this is where you set up your apps
+	setupAppRoutes(app, "exampleapp") // Will fail if exampleapp is not available
+	setupAppRoutes(app, "someotherapp") // Add more as needed
+	
+	if config.IsDevelopment() {
+		setupDevelopmentServer()
+	} else {
+		setupProductionServer()
+	}
+}
+
+var exampleapp App = nil
+
+// Mocked INSTALLED_APPS-like structure
+var INSTALLED_APPS = map[string]bool{
+	"exampleapp": true,  // This app is enabled
+	"otherapp":   false, // This app is disabled and won't be set up
+	// Add more apps as needed
+}
+
+func getAppPackage(appName string) (App, error) {
+	switch appName {
+	case "exampleapp":
+		if exampleapp != nil {
+			return exampleapp, nil
+		}
+		return nil, fmt.Errorf("exampleapp is not available")
+	default:
+		return nil, fmt.Errorf("Unknown app: %s", appName)
+	}
+}
+
+func setupAppRoutes(app *fiber.App, appName string) {
+	// Get the app package statically using the new helper function
+	appPackage, err := getAppPackage(appName)
+	if err != nil {
+		log.Printf("Error setting up app: %v", err)
+		return
+	}
+
+	// If appPackage is found, call its SetupRoutes function
+	if appPackage != nil {
+		appPackage.SetupRoutes(app)
+		log.Printf("Routes set up for app: %s", appName)
+	} else {
+		log.Printf("Failed to set up routes for app: %s", appName)
+	}
+}
+
+// Common route setup for both dev and production
+func setupRoutes(app *fiber.App) {
+	// Monitoring endpoints
+	app.Get("/status", monitor.HandleStatus)
+	app.Get("/status/server-info", monitor.HandleStatus)
+	app.Get("/status/cpu", monitor.HandleStatus)
+	app.Get("/status/ram", monitor.HandleStatus)
+	app.Get("/status/storage", monitor.HandleStatus)
+	app.Get("/status/old", monitor.HandleStatus)
+
+	// Set up routes for installed apps
+	for _, appName := range config.GetInstalledApps() {
+		setupAppRoutes(app, appName)
+	}
+}
+
+func setupDevelopmentServer() {
+	app := fiber.New(fiber.Config{
+		Views: html.New("./", ".html"),
+	})
+
+	// Configure CORS
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "*",
+		AllowHeaders: "Origin, Content-Type, Accept",
+	}))
+
+	reverb.SetupWebSocket(app)
+	setupRoutes(app) // Call common route setup
+
+	wsPort := config.GetWebSocketPort()
+
+	// Log WebSocket server start
+	logger.Printf("WebSocket server started on http://127.0.0.1:%s", wsPort)
+
+	// Start the server
+	err := app.Listen(":" + wsPort)
+	if err != nil {
+		logger.Fatalf("Failed to start WebSocket server: %v", err)
+	}
+}
+
+func setupProductionServer() {
+	app := fiber.New(fiber.Config{
+		Views: html.New("./", ".html"),
+	})
+
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     config.GetAllowedOrigins(),
+		AllowHeaders:     "Origin, Content-Type, Accept",
+		AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
+		AllowCredentials: true,
+	}))
+
+	reverb.SetupWebSocket(app)
+	setupRoutes(app) // Call common route setup
+
+	wsPort := config.GetWebSocketPort()
+	certFile := config.GetCertFile()
+	keyFile := config.GetKeyFile()
+
+	logger.Printf("Allowed origins: %s", config.GetAllowedOrigins())
+
+	if certFile != "" && keyFile != "" {
+		logger.Printf("Starting HTTPS server on port %s", wsPort)
+		err := app.ListenTLS(":"+wsPort, certFile, keyFile)
+		if err != nil {
+			logger.Fatalf("Failed to start HTTPS server: %v", err)
+		}
+	} else {
+		logger.Printf("Starting HTTP server on port %s", wsPort)
+		err := app.Listen(":" + wsPort)
+		if err != nil {
+			logger.Fatalf("Failed to start HTTP server: %v", err)
+		}
+	}
+}
