@@ -10,6 +10,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres" // or whatever database you're using
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/cobra"
 
 	"github.com/mviner000/eyymi/config" // Update this import path to match your project structure
@@ -140,8 +141,20 @@ func SetupRoutes(app *fiber.App) {
 func runMigrations() {
 	// Use the database URL from your config
 	dbURL := config.GetDatabaseURL()
-	migrationsPath := filepath.Join("..", "..", "migrations")
-	m, err := migrate.New(fmt.Sprintf("file://%s", migrationsPath), dbURL)
+	
+	// Convert backslashes to forward slashes for file URL
+	migrationsPath := filepath.ToSlash(filepath.Join("..", "..", "migrations"))
+	
+	// Construct the source URL
+	sourceURL := fmt.Sprintf("file://%s", migrationsPath)
+
+	// For SQLite, we need to adjust the URL format
+	if strings.HasPrefix(dbURL, "sqlite3://") {
+		dbURL = strings.TrimPrefix(dbURL, "sqlite3://")
+		dbURL = fmt.Sprintf("sqlite3://%s", dbURL)
+	}
+
+	m, err := migrate.New(sourceURL, dbURL)
 	if err != nil {
 		fmt.Printf("Error creating migrate instance: %v\n", err)
 		return

@@ -1,0 +1,22 @@
+{
+    "environment": "development",
+    "webSocketPort": "3000",
+    "allowedOrigins": "https://eyymi.site",
+    "certFile": "",
+    "keyFile": "",
+    "logFile": "server.log",
+    "isDevelopment": true,
+    "installedApps": [
+      "newapp",
+      "exampleapp"
+    ],
+    "database": {
+      "engine": "sqlite3",
+      "name": "db.sqlite3",
+      "user": "",
+      "password": "",
+      "host": "",
+      "port": "",
+      "options": {}
+    }
+  }

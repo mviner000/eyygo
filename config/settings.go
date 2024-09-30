@@ -5,17 +5,29 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 )
 
+type DatabaseConfig struct {
+	Engine   string `json:"engine"`
+	Name     string `json:"name"`
+	User     string `json:"user"`
+	Password string `json:"password"`
+	Host     string `json:"host"`
+	Port     string `json:"port"`
+	Options  map[string]string `json:"options"`
+}
+
 type Settings struct {
-	Environment    string   `json:"environment"`
-	WebSocketPort  string   `json:"webSocketPort"`
-	AllowedOrigins string   `json:"allowedOrigins"`
-	CertFile       string   `json:"certFile"`
-	KeyFile        string   `json:"keyFile"`
-	LogFile        string   `json:"logFile"`
-	IsDevelopment  bool     `json:"isDevelopment"`
-	InstalledApps  []string `json:"installedApps"`
+	Environment    string         `json:"environment"`
+	WebSocketPort  string         `json:"webSocketPort"`
+	AllowedOrigins string         `json:"allowedOrigins"`
+	CertFile       string         `json:"certFile"`
+	KeyFile        string         `json:"keyFile"`
+	LogFile        string         `json:"logFile"`
+	IsDevelopment  bool           `json:"isDevelopment"`
+	InstalledApps  []string       `json:"installedApps"`
+	Database       DatabaseConfig `json:"database"`
 }
 
 var AppSettings Settings
@@ -30,6 +42,7 @@ func loadSettings() {
 	file, err := os.Open(settingsFile)
 	if err != nil {
 		if os.IsNotExist(err) {
+			log.Printf("Debug: config.json not found. Using default settings.")
 			AppSettings = getDefaultSettings()
 			saveSettings()
 		} else {
@@ -42,9 +55,12 @@ func loadSettings() {
 		if err != nil {
 			log.Fatalf("Error decoding config file: %v", err)
 		}
+		log.Printf("Debug: Successfully loaded settings from config.json")
 	}
 
 	AppSettings.IsDevelopment = AppSettings.Environment == "development"
+	log.Printf("Debug: Database Engine: %s", AppSettings.Database.Engine)
+	log.Printf("Debug: Database Name: %s", AppSettings.Database.Name)
 }
 
 func getDefaultSettings() Settings {
@@ -56,8 +72,18 @@ func getDefaultSettings() Settings {
 		KeyFile:        getEnv("KEY_FILE", ""),
 		LogFile:        getEnv("LOG_FILE", "server.log"),
 		InstalledApps:  []string{},
+		Database: DatabaseConfig{
+			Engine:   getEnv("DB_ENGINE", "sqlite3"),  // Changed default to sqlite3
+			Name:     getEnv("DB_NAME", "db.sqlite3"), // Changed default name
+			User:     getEnv("DB_USER", ""),
+			Password: getEnv("DB_PASSWORD", ""),
+			Host:     getEnv("DB_HOST", ""),
+			Port:     getEnv("DB_PORT", ""),
+			Options:  make(map[string]string),
+		},
 	}
 }
+
 
 func saveSettings() {
 	file, err := os.Create(settingsFile)
@@ -109,15 +135,27 @@ func GetKeyFile() string {
 	return AppSettings.KeyFile
 }
 
-func GetDatabaseURL() string {
-	host := getEnv("DB_HOST", "localhost")
-	port := getEnv("DB_PORT", "5432")
-	user := getEnv("DB_USER", "username")
-	password := getEnv("DB_PASSWORD", "password")
-	dbname := getEnv("DB_NAME", "database")
 
-	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		user, password, host, port, dbname)
+func GetDatabaseURL() string {
+	db := AppSettings.Database
+	var dbURL string
+	switch db.Engine {
+	case "postgresql":
+		dbURL = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
+			db.User, db.Password, db.Host, db.Port, db.Name)
+	case "mysql":
+		dbURL = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s",
+			db.User, db.Password, db.Host, db.Port, db.Name)
+	case "sqlite3":
+		dbPath := filepath.Join(getEnv("BASE_DIR", "."), db.Name)
+		dbURL = fmt.Sprintf("sqlite3://%s", filepath.ToSlash(dbPath))
+	default:
+		log.Printf("Debug: Unsupported database engine: %s, falling back to SQLite", db.Engine)
+		dbPath := filepath.Join(getEnv("BASE_DIR", "."), "db.sqlite3")
+		dbURL = fmt.Sprintf("sqlite3://%s", filepath.ToSlash(dbPath))
+	}
+	log.Printf("Debug: Database URL: %s", dbURL)
+	return dbURL
 }
 
 func GetInstalledApps() []string {

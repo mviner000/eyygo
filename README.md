@@ -2,6 +2,15 @@
 
 To install dependencies:
 
+WINDOWS: to start a new app
+```bash
+go build -o manage.exe .\cmd\manage
+```
+
+```bash
+.\manage.exe startapp newapp 
+```
+
 ```bash
 bun install
 ```
