@@ -6,37 +6,29 @@ WINDOWS: to start a new app
 
 WINDOWS: to start the server
 
+BUILD FILES
+
 ```bash
-go build -o server ./cmd/server
+go build
 ```
 then
+MIGRATE
 
 ```bash
-./server start
+go run manage.go runserver
 ```
 
-to start a new app
-
+RUNSERVER
 ```bash
-go build -o manage.exe .\cmd\manage
+go run manage.go migrate
 ```
 
+START NEW APP
 ```bash
-.\manage.exe startapp newapp 
+go run manage.go startapp
 ```
 
-to run migrate
-
-
-```bash
-go build -o manage ./cmd/manage
-```
-
-
-```bash
- ./manage migrate
-```
-
+START SERVER by BUN
 
 ```bash
 bun install

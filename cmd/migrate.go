@@ -1,9 +1,7 @@
-package main
+package cmd
 
 import (
-	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"github.com/mviner000/eyymi/config"
@@ -13,16 +11,7 @@ import (
 	"gorm.io/gorm"
 )
 
-var rootCmd = &cobra.Command{
-	Use:   "manage",
-	Short: "Project management tool for your Go application",
-}
-
-func init() {
-	rootCmd.AddCommand(migrateCmd)
-}
-
-var migrateCmd = &cobra.Command{
+var MigrateCmd = &cobra.Command{
 	Use:   "migrate",
 	Short: "Run database migrations",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -55,7 +44,6 @@ func runMigrations() {
 func createSuperUserIfNotExists(db *gorm.DB) {
 	var count int64
 	db.Model(&types.User{}).Where("is_superuser = ?", true).Count(&count)
-
 	if count == 0 {
 		superuser := types.User{
 			Username:    "admin",
@@ -66,21 +54,12 @@ func createSuperUserIfNotExists(db *gorm.DB) {
 			IsStaff:     true,
 			IsSuperuser: true,
 		}
-
 		result := db.Create(&superuser)
 		if result.Error != nil {
 			log.Fatalf("Failed to create superuser: %v", result.Error)
 		}
-
 		log.Println("Superuser created successfully.")
 	} else {
 		log.Println("Superuser already exists.")
-	}
-}
-
-func main() {
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
 	}
 }

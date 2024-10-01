@@ -1,9 +1,10 @@
-package main
+package core
 
 import (
 	"fmt"
 	"log"
 	"os"
+	"sort"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -28,7 +29,7 @@ type App interface {
 
 func init() {
 	if logger == nil {
-		logger = log.New(os.Stdout, "MAIN: ", log.Ldate|log.Ltime|log.Lshortfile)
+		logger = log.New(os.Stdout, "CORE: ", log.Ldate|log.Ltime|log.Lshortfile)
 	}
 	reverb.SetLogger(logger)
 
@@ -39,7 +40,7 @@ func init() {
 	}
 }
 
-func main() {
+func RunCommand() {
 	if config.IsDevelopment() {
 		setupDevelopmentServer()
 	} else {
@@ -90,6 +91,25 @@ func setupAppRoutes(app *fiber.App, appName string) {
 }
 
 func setupRoutes(app *fiber.App) {
+	// Debug logging for INSTALLED_APPS
+	if config.AppSettings.Debug {
+		logger.Println("INSTALLED_APPS:")
+		// Create a sorted list of app names for consistent output
+		var appNames []string
+		for appName := range INSTALLED_APPS {
+			appNames = append(appNames, appName)
+		}
+		sort.Strings(appNames)
+
+		for _, appName := range appNames {
+			status := "Disabled"
+			if INSTALLED_APPS[appName] {
+				status = "Enabled"
+			}
+			logger.Printf("  - %s: %s", appName, status)
+		}
+	}
+
 	// Monitoring endpoints
 	monitor.SetupRoutes(app)
 
@@ -98,8 +118,8 @@ func setupRoutes(app *fiber.App) {
 	adminHandler.SetupRoutes(app)
 
 	// Set up routes for installed apps
-	for appName := range INSTALLED_APPS {
-		if INSTALLED_APPS[appName] {
+	for appName, isEnabled := range INSTALLED_APPS {
+		if isEnabled {
 			setupAppRoutes(app, appName)
 		}
 	}

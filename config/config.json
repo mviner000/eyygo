@@ -6,8 +6,7 @@
   "keyFile": "",
   "logFile": "server.log",
   "isDevelopment": false,
-  "debug": false,
-  "installedApps": [],
+  "debug": true,
   "database": {
     "engine": "sqlite3",
     "name": "db.sqlite3",
