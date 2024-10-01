@@ -7,13 +7,17 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/template/html/v2"
+	"github.com/mviner000/eyymi/admin"
 	"github.com/mviner000/eyymi/config"
 	"github.com/mviner000/eyymi/monitor"
-	"github.com/mviner000/eyymi/reverb" // Import your app statically
+	"github.com/mviner000/eyymi/reverb"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 var (
 	logger *log.Logger
+	db     *gorm.DB
 )
 
 // Define an interface that all apps should implement
@@ -24,16 +28,15 @@ type App interface {
 func init() {
 	logger = config.GetLogger()
 	reverb.SetLogger(logger)
+
+	var err error
+	db, err = gorm.Open(sqlite.Open(config.GetDatabaseURL()), &gorm.Config{})
+	if err != nil {
+		logger.Fatalf("Failed to connect to database: %v", err)
+	}
 }
 
 func main() {
-	// Your fiber app setup
-	app := fiber.New()
-
-	// Assume this is where you set up your apps
-	setupAppRoutes(app, "exampleapp") // Will fail if exampleapp is not available
-	setupAppRoutes(app, "someotherapp") // Add more as needed
-	
 	if config.IsDevelopment() {
 		setupDevelopmentServer()
 	} else {
@@ -79,7 +82,6 @@ func setupAppRoutes(app *fiber.App, appName string) {
 	}
 }
 
-// Common route setup for both dev and production
 func setupRoutes(app *fiber.App) {
 	// Monitoring endpoints
 	app.Get("/status", monitor.HandleStatus)
@@ -89,9 +91,15 @@ func setupRoutes(app *fiber.App) {
 	app.Get("/status/storage", monitor.HandleStatus)
 	app.Get("/status/old", monitor.HandleStatus)
 
+	// Admin routes
+	adminHandler := admin.NewAdminHandler(db)
+	adminHandler.SetupRoutes(app)
+
 	// Set up routes for installed apps
-	for _, appName := range config.GetInstalledApps() {
-		setupAppRoutes(app, appName)
+	for appName := range INSTALLED_APPS {
+		if INSTALLED_APPS[appName] {
+			setupAppRoutes(app, appName)
+		}
 	}
 }
 

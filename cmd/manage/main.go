@@ -2,18 +2,14 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
-	"path/filepath"
-	"strings"
 	"time"
 
-	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/postgres" // or whatever database you're using
-	_ "github.com/golang-migrate/migrate/v4/source/file"
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/mviner000/eyymi/config"
 	"github.com/spf13/cobra"
-
-	"github.com/mviner000/eyymi/config" // Update this import path to match your project structure
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 var rootCmd = &cobra.Command{
@@ -22,19 +18,7 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(startappCmd)
 	rootCmd.AddCommand(migrateCmd)
-	rootCmd.AddCommand(makemigrationsCmd)
-}
-
-var startappCmd = &cobra.Command{
-	Use:   "startapp [name]",
-	Short: "Create a new application",
-	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		appName := args[0]
-		createApp(appName)
-	},
 }
 
 var migrateCmd = &cobra.Command{
@@ -45,148 +29,63 @@ var migrateCmd = &cobra.Command{
 	},
 }
 
-var makemigrationsCmd = &cobra.Command{
-	Use:   "makemigrations [name]",
-	Short: "Create a new migration file",
-	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		migrationName := args[0]
-		createMigration(migrationName)
-	},
-}
-
-func createApp(name string) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		fmt.Printf("Error getting current working directory: %v\n", err)
-		return
-	}
-
-	appDir := filepath.Join(cwd, name)
-	absAppDir, err := filepath.Abs(appDir)
-	if err != nil {
-		fmt.Printf("Error getting absolute path: %v\n", err)
-		return
-	}
-
-	err = os.MkdirAll(absAppDir, os.ModePerm)
-	if err != nil {
-		fmt.Printf("Error creating directory: %v\n", err)
-		return
-	}
-
-	files := map[string]func(string) string{
-		"handlers.go": createHandlersTemplate,
-		"models.go":   createModelsTemplate,
-		"routes.go":   createRoutesTemplate,
-	}
-
-	for file, templateFunc := range files {
-		fullPath := filepath.Join(absAppDir, file)
-		content := templateFunc(name)
-		err := os.WriteFile(fullPath, []byte(content), 0644)
-		if err != nil {
-			fmt.Printf("Error creating file %s: %v\n", fullPath, err)
-			return
-		}
-		fmt.Printf("Created %s\n", fullPath)
-	}
-
-	config.AddInstalledApp(name)
-
-	fmt.Printf("Application '%s' created successfully and added to INSTALLED_APPS.\n", name)
-	fmt.Printf("Full path of the new application: %s\n", absAppDir)
-}
-
-func createHandlersTemplate(appName string) string {
-	return fmt.Sprintf(`package %s
-
-import (
-	"github.com/gofiber/fiber/v2"
-)
-
-// HelloHandler handles the hello route
-func HelloHandler(c *fiber.Ctx) error {
-	return c.SendString("Hello from %s!")
-}
-`, appName, appName)
-}
-
-func createModelsTemplate(appName string) string {
-	return fmt.Sprintf(`package %s
-
-// Example model
-type Example struct {
-	ID   int    ` + "`json:\"id\"`" + `
-	Name string ` + "`json:\"name\"`" + `
-}
-`, appName)
-}
-
-func createRoutesTemplate(appName string) string {
-	return fmt.Sprintf(`package %s
-
-import (
-	"github.com/gofiber/fiber/v2"
-)
-
-// SetupRoutes configures the routes for the %s app
-func SetupRoutes(app *fiber.App) {
-	%sGroup := app.Group("/%s")
-	%sGroup.Get("/hello", HelloHandler)
-}
-`, appName, appName, strings.ToLower(appName), strings.ToLower(appName), strings.ToLower(appName))
+type User struct {
+	gorm.Model
+	Username    string `gorm:"unique;not null"`
+	Email       string `gorm:"unique;not null"`
+	Password    string `gorm:"not null"`
+	DateJoined  time.Time
+	IsActive    bool `gorm:"default:true"`
+	IsStaff     bool `gorm:"default:false"`
+	IsSuperuser bool `gorm:"default:false"`
 }
 
 func runMigrations() {
-	// Use the database URL from your config
 	dbURL := config.GetDatabaseURL()
-	
-	// Convert backslashes to forward slashes for file URL
-	migrationsPath := filepath.ToSlash(filepath.Join("..", "..", "migrations"))
-	
-	// Construct the source URL
-	sourceURL := fmt.Sprintf("file://%s", migrationsPath)
+	log.Printf("Debug: Using database URL: %s", dbURL)
 
-	// For SQLite, we need to adjust the URL format
-	if strings.HasPrefix(dbURL, "sqlite3://") {
-		dbURL = strings.TrimPrefix(dbURL, "sqlite3://")
-		dbURL = fmt.Sprintf("sqlite3://%s", dbURL)
-	}
-
-	m, err := migrate.New(sourceURL, dbURL)
+	// Open a connection to the database
+	db, err := gorm.Open(sqlite.Open(dbURL), &gorm.Config{})
 	if err != nil {
-		fmt.Printf("Error creating migrate instance: %v\n", err)
-		return
+		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
-	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
-		fmt.Printf("Error running migrations: %v\n", err)
-		return
+	// Run migrations
+	err = db.AutoMigrate(&User{})
+	if err != nil {
+		log.Fatalf("Failed to run migrations: %v", err)
 	}
 
-	fmt.Println("Migrations completed successfully.")
+	log.Println("Migrations completed successfully.")
+
+	// Create a superuser if it doesn't exist
+	createSuperUserIfNotExists(db)
 }
 
-func createMigration(name string) {
-	timestamp := time.Now().Format("20060102150405")
-	upFileName := fmt.Sprintf("%s_%s.up.sql", timestamp, name)
-	downFileName := fmt.Sprintf("%s_%s.down.sql", timestamp, name)
+func createSuperUserIfNotExists(db *gorm.DB) {
+	var count int64
+	db.Model(&User{}).Where("is_superuser = ?", true).Count(&count)
 
-	migrationsDir := filepath.Join("..", "..", "migrations")
-	os.MkdirAll(migrationsDir, os.ModePerm)
-
-	for _, fileName := range []string{upFileName, downFileName} {
-		f, err := os.Create(filepath.Join(migrationsDir, fileName))
-		if err != nil {
-			fmt.Printf("Error creating migration file %s: %v\n", fileName, err)
-			return
+	if count == 0 {
+		superuser := User{
+			Username:    "admin",
+			Email:       "admin@example.com",
+			Password:    "adminpassword", // In a real app, hash this password
+			DateJoined:  time.Now(),
+			IsActive:    true,
+			IsStaff:     true,
+			IsSuperuser: true,
 		}
-		defer f.Close()
-		fmt.Printf("Created migration file: %s\n", fileName)
-	}
 
-	fmt.Println("Migration files created successfully. Please edit them to add your migration SQL.")
+		result := db.Create(&superuser)
+		if result.Error != nil {
+			log.Fatalf("Failed to create superuser: %v", result.Error)
+		}
+
+		log.Println("Superuser created successfully.")
+	} else {
+		log.Println("Superuser already exists.")
+	}
 }
 
 func main() {
@@ -194,7 +93,4 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-
-	installedApps := config.GetInstalledApps()
-    fmt.Println("Installed Apps:", installedApps)
 }
