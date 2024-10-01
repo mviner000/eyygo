@@ -2,9 +2,7 @@
 
 To install dependencies:
 
-WINDOWS: to start a new app
-
-WINDOWS: to start the server
+UBUNTU
 
 BUILD FILES
 
@@ -40,4 +38,3 @@ To run:
 bun run index.ts
 ```
 
-This project was created using `bun init` in bun v1.1.10. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.

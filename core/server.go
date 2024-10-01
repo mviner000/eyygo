@@ -114,8 +114,8 @@ func setupRoutes(app *fiber.App) {
 	monitor.SetupRoutes(app)
 
 	// Admin routes
-	adminHandler := admin.NewAdminHandler(db)
-	adminHandler.SetupRoutes(app)
+	_, adminSetup := admin.NewAdminModule(db)
+	adminSetup(app)
 
 	// Set up routes for installed apps
 	for appName, isEnabled := range INSTALLED_APPS {
