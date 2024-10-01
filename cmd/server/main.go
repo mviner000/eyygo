@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -26,7 +27,9 @@ type App interface {
 }
 
 func init() {
-	logger = config.GetLogger()
+	if logger == nil {
+		logger = log.New(os.Stdout, "MAIN: ", log.Ldate|log.Ltime|log.Lshortfile)
+	}
 	reverb.SetLogger(logger)
 
 	var err error
@@ -61,7 +64,7 @@ func getAppPackage(appName string) (App, error) {
 		}
 		return nil, fmt.Errorf("exampleapp is not available")
 	default:
-		return nil, fmt.Errorf("Unknown app: %s", appName)
+		return nil, fmt.Errorf("unknown app: %s", appName)
 	}
 }
 
@@ -69,27 +72,26 @@ func setupAppRoutes(app *fiber.App, appName string) {
 	// Get the app package statically using the new helper function
 	appPackage, err := getAppPackage(appName)
 	if err != nil {
-		log.Printf("Error setting up app: %v", err)
+		if config.AppSettings.Debug {
+			logger.Printf("Error setting up app: %v", err)
+		}
 		return
 	}
 
 	// If appPackage is found, call its SetupRoutes function
 	if appPackage != nil {
 		appPackage.SetupRoutes(app)
-		log.Printf("Routes set up for app: %s", appName)
-	} else {
-		log.Printf("Failed to set up routes for app: %s", appName)
+		if config.AppSettings.Debug {
+			logger.Printf("Routes set up for app: %s", appName)
+		}
+	} else if config.AppSettings.Debug {
+		logger.Printf("Failed to set up routes for app: %s", appName)
 	}
 }
 
 func setupRoutes(app *fiber.App) {
 	// Monitoring endpoints
-	app.Get("/status", monitor.HandleStatus)
-	app.Get("/status/server-info", monitor.HandleStatus)
-	app.Get("/status/cpu", monitor.HandleStatus)
-	app.Get("/status/ram", monitor.HandleStatus)
-	app.Get("/status/storage", monitor.HandleStatus)
-	app.Get("/status/old", monitor.HandleStatus)
+	monitor.SetupRoutes(app)
 
 	// Admin routes
 	adminHandler := admin.NewAdminHandler(db)
@@ -119,8 +121,10 @@ func setupDevelopmentServer() {
 
 	wsPort := config.GetWebSocketPort()
 
-	// Log WebSocket server start
-	logger.Printf("WebSocket server started on http://127.0.0.1:%s", wsPort)
+	// Log WebSocket server start only if debug is true
+	if config.AppSettings.Debug {
+		logger.Printf("WebSocket server started on http://127.0.0.1:%s", wsPort)
+	}
 
 	// Start the server
 	err := app.Listen(":" + wsPort)
@@ -148,16 +152,22 @@ func setupProductionServer() {
 	certFile := config.GetCertFile()
 	keyFile := config.GetKeyFile()
 
-	logger.Printf("Allowed origins: %s", config.GetAllowedOrigins())
+	if config.AppSettings.Debug {
+		logger.Printf("Allowed origins: %s", config.GetAllowedOrigins())
+	}
 
 	if certFile != "" && keyFile != "" {
-		logger.Printf("Starting HTTPS server on port %s", wsPort)
+		if config.AppSettings.Debug {
+			logger.Printf("Starting HTTPS server on port %s", wsPort)
+		}
 		err := app.ListenTLS(":"+wsPort, certFile, keyFile)
 		if err != nil {
 			logger.Fatalf("Failed to start HTTPS server: %v", err)
 		}
 	} else {
-		logger.Printf("Starting HTTP server on port %s", wsPort)
+		if config.AppSettings.Debug {
+			logger.Printf("Starting HTTP server on port %s", wsPort)
+		}
 		err := app.Listen(":" + wsPort)
 		if err != nil {
 			logger.Fatalf("Failed to start HTTP server: %v", err)

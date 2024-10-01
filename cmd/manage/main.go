@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/mviner000/eyymi/config"
+	"github.com/mviner000/eyymi/types"
 	"github.com/spf13/cobra"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -29,20 +30,9 @@ var migrateCmd = &cobra.Command{
 	},
 }
 
-type User struct {
-	gorm.Model
-	Username    string `gorm:"unique;not null"`
-	Email       string `gorm:"unique;not null"`
-	Password    string `gorm:"not null"`
-	DateJoined  time.Time
-	IsActive    bool `gorm:"default:true"`
-	IsStaff     bool `gorm:"default:false"`
-	IsSuperuser bool `gorm:"default:false"`
-}
-
 func runMigrations() {
 	dbURL := config.GetDatabaseURL()
-	log.Printf("Debug: Using database URL: %s", dbURL)
+	config.DebugLog("Using database URL: %s", dbURL)
 
 	// Open a connection to the database
 	db, err := gorm.Open(sqlite.Open(dbURL), &gorm.Config{})
@@ -51,7 +41,7 @@ func runMigrations() {
 	}
 
 	// Run migrations
-	err = db.AutoMigrate(&User{})
+	err = db.AutoMigrate(&types.User{})
 	if err != nil {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
@@ -64,10 +54,10 @@ func runMigrations() {
 
 func createSuperUserIfNotExists(db *gorm.DB) {
 	var count int64
-	db.Model(&User{}).Where("is_superuser = ?", true).Count(&count)
+	db.Model(&types.User{}).Where("is_superuser = ?", true).Count(&count)
 
 	if count == 0 {
-		superuser := User{
+		superuser := types.User{
 			Username:    "admin",
 			Email:       "admin@example.com",
 			Password:    "adminpassword", // In a real app, hash this password

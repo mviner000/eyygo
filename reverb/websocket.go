@@ -14,35 +14,47 @@ var (
 )
 
 func SetLogger(l *log.Logger) {
-	logger = l
+	if l == nil {
+		logger = log.New(os.Stdout, "WEBSOCKET: ", log.Ldate|log.Ltime|log.Lshortfile)
+	} else {
+		logger = l
+	}
 }
 
 func SetupWebSocket(app *fiber.App) {
-    wsPort := os.Getenv("WS_PORT")
-    if wsPort == "" {
-        wsPort = "3000" // Default to 3000 if not set
-    }
+	if logger == nil {
+		SetLogger(nil) // This will create a default logger
+	}
 
-    // Convert wsPort to int
-    wsPortInt, err := strconv.Atoi(wsPort)
-    if err != nil {
-        logger.Fatalf("Invalid WS_PORT: %v", err)
-    }
+	wsPort := os.Getenv("WS_PORT")
+	if wsPort == "" {
+		wsPort = "3000" // Default to 3000 if not set
+	}
 
-    app.Use("/ws", func(c *fiber.Ctx) error {
-        if websocket.IsWebSocketUpgrade(c) {
-            c.Locals("allowed", true)
-            return c.Next()
-        }
-        return fiber.ErrUpgradeRequired
-    })
+	// Convert wsPort to int
+	wsPortInt, err := strconv.Atoi(wsPort)
+	if err != nil {
+		logger.Fatalf("Invalid WS_PORT: %v", err)
+	}
 
-    app.Get("/ws", websocket.New(handleWebSocket))
+	app.Use("/ws", func(c *fiber.Ctx) error {
+		if websocket.IsWebSocketUpgrade(c) {
+			c.Locals("allowed", true)
+			return c.Next()
+		}
+		return fiber.ErrUpgradeRequired
+	})
 
-    logger.Printf("WebSocket server configured on port %d", wsPortInt)
+	app.Get("/ws", websocket.New(handleWebSocket))
+
+	logger.Printf("WebSocket server configured on port %d", wsPortInt)
 }
 
 func handleWebSocket(c *websocket.Conn) {
+	if logger == nil {
+		SetLogger(nil) // This will create a default logger if it's still nil
+	}
+
 	// Basic WebSocket connection handler
 	for {
 		messageType, message, err := c.ReadMessage()
