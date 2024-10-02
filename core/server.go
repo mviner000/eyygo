@@ -5,12 +5,16 @@ import (
 	"log"
 	"os"
 	"sort"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/template/html/v2"
 	"github.com/mviner000/eyymi/admin"
 	"github.com/mviner000/eyymi/config"
+	"github.com/mviner000/eyymi/core/decorators"
 	"github.com/mviner000/eyymi/monitor"
 	"github.com/mviner000/eyymi/reverb"
 	"gorm.io/driver/sqlite"
@@ -18,8 +22,8 @@ import (
 )
 
 var (
-	logger *log.Logger
-	db     *gorm.DB
+	appLogger *log.Logger
+	db        *gorm.DB
 )
 
 // Define an interface that all apps should implement
@@ -28,15 +32,15 @@ type App interface {
 }
 
 func init() {
-	if logger == nil {
-		logger = log.New(os.Stdout, "CORE: ", log.Ldate|log.Ltime|log.Lshortfile)
+	if appLogger == nil {
+		appLogger = log.New(os.Stdout, "CORE: ", log.Ldate|log.Ltime|log.Lshortfile)
 	}
-	reverb.SetLogger(logger)
+	reverb.SetLogger(appLogger)
 
 	var err error
 	db, err = gorm.Open(sqlite.Open(config.GetDatabaseURL()), &gorm.Config{})
 	if err != nil {
-		logger.Fatalf("Failed to connect to database: %v", err)
+		appLogger.Fatalf("Failed to connect to database: %v", err)
 	}
 }
 
@@ -70,31 +74,27 @@ func getAppPackage(appName string) (App, error) {
 }
 
 func setupAppRoutes(app *fiber.App, appName string) {
-	// Get the app package statically using the new helper function
 	appPackage, err := getAppPackage(appName)
 	if err != nil {
 		if config.AppSettings.Debug {
-			logger.Printf("Error setting up app: %v", err)
+			appLogger.Printf("Error setting up app: %v", err)
 		}
 		return
 	}
 
-	// If appPackage is found, call its SetupRoutes function
 	if appPackage != nil {
 		appPackage.SetupRoutes(app)
 		if config.AppSettings.Debug {
-			logger.Printf("Routes set up for app: %s", appName)
+			appLogger.Printf("Routes set up for app: %s", appName)
 		}
 	} else if config.AppSettings.Debug {
-		logger.Printf("Failed to set up routes for app: %s", appName)
+		appLogger.Printf("Failed to set up routes for app: %s", appName)
 	}
 }
 
 func setupRoutes(app *fiber.App) {
-	// Debug logging for INSTALLED_APPS
 	if config.AppSettings.Debug {
-		logger.Println("INSTALLED_APPS:")
-		// Create a sorted list of app names for consistent output
+		appLogger.Println("INSTALLED_APPS:")
 		var appNames []string
 		for appName := range INSTALLED_APPS {
 			appNames = append(appNames, appName)
@@ -106,7 +106,7 @@ func setupRoutes(app *fiber.App) {
 			if INSTALLED_APPS[appName] {
 				status = "Enabled"
 			}
-			logger.Printf("  - %s: %s", appName, status)
+			appLogger.Printf("  - %s: %s", appName, status)
 		}
 	}
 
@@ -125,72 +125,94 @@ func setupRoutes(app *fiber.App) {
 	}
 }
 
-func setupDevelopmentServer() {
-	app := fiber.New(fiber.Config{
-		Views: html.New("./", ".html"),
-	})
+func setupMiddleware(app *fiber.App, isProd bool) {
+	// Recover middleware
+	app.Use(recover.New())
 
-	// Configure CORS
-	app.Use(cors.New(cors.Config{
-		AllowOrigins: "*",
-		AllowHeaders: "Origin, Content-Type, Accept",
+	// Logger middleware
+	app.Use(logger.New(logger.Config{
+		Format:     "${time} ${status} - ${method} ${path}\n",
+		TimeFormat: "2006-01-02 15:04:05",
+		TimeZone:   "Local",
 	}))
 
+	// CORS middleware
+	corsConfig := cors.Config{
+		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
+		AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
+		AllowCredentials: true,
+	}
+	if isProd {
+		corsConfig.AllowOrigins = config.GetAllowedOrigins()
+	} else {
+		corsConfig.AllowOrigins = "*"
+	}
+	app.Use(cors.New(corsConfig))
+
+	// Custom middlewares
+	app.Use(decorators.RequireHTTPS())
+	app.Use(decorators.Logger())
+	app.Use(decorators.Throttle(100, 60)) // 100 requests per minute
+	app.Use(decorators.DatabaseTransaction(db))
+}
+
+func setupDevelopmentServer() {
+	app := fiber.New(fiber.Config{
+		Views:       html.New("./", ".html"),
+		ReadTimeout: 5 * time.Second,
+	})
+
+	setupMiddleware(app, false)
 	reverb.SetupWebSocket(app)
-	setupRoutes(app) // Call common route setup
+	setupRoutes(app)
 
 	wsPort := config.GetWebSocketPort()
 
-	// Log WebSocket server start only if debug is true
 	if config.AppSettings.Debug {
-		logger.Printf("WebSocket server started on http://127.0.0.1:%s", wsPort)
+		appLogger.Printf("Development server started on http://127.0.0.1:%s", wsPort)
 	}
 
-	// Start the server
 	err := app.Listen(":" + wsPort)
 	if err != nil {
-		logger.Fatalf("Failed to start WebSocket server: %v", err)
+		appLogger.Fatalf("Failed to start development server: %v", err)
 	}
 }
 
 func setupProductionServer() {
 	app := fiber.New(fiber.Config{
-		Views: html.New("./", ".html"),
+		Views:        html.New("./", ".html"),
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
 	})
 
-	app.Use(cors.New(cors.Config{
-		AllowOrigins:     config.GetAllowedOrigins(),
-		AllowHeaders:     "Origin, Content-Type, Accept",
-		AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
-		AllowCredentials: true,
-	}))
-
+	setupMiddleware(app, true)
 	reverb.SetupWebSocket(app)
-	setupRoutes(app) // Call common route setup
+	setupRoutes(app)
 
 	wsPort := config.GetWebSocketPort()
 	certFile := config.GetCertFile()
 	keyFile := config.GetKeyFile()
 
 	if config.AppSettings.Debug {
-		logger.Printf("Allowed origins: %s", config.GetAllowedOrigins())
+		appLogger.Printf("Allowed origins: %s", config.GetAllowedOrigins())
 	}
 
 	if certFile != "" && keyFile != "" {
 		if config.AppSettings.Debug {
-			logger.Printf("Starting HTTPS server on port %s", wsPort)
+			appLogger.Printf("Starting HTTPS server on port %s", wsPort)
 		}
 		err := app.ListenTLS(":"+wsPort, certFile, keyFile)
 		if err != nil {
-			logger.Fatalf("Failed to start HTTPS server: %v", err)
+			appLogger.Fatalf("Failed to start HTTPS server: %v", err)
 		}
 	} else {
 		if config.AppSettings.Debug {
-			logger.Printf("Starting HTTP server on port %s", wsPort)
+			appLogger.Printf("Starting HTTP server on port %s", wsPort)
 		}
 		err := app.Listen(":" + wsPort)
 		if err != nil {
-			logger.Fatalf("Failed to start HTTP server: %v", err)
+			appLogger.Fatalf("Failed to start HTTP server: %v", err)
 		}
 	}
 }
