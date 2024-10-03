@@ -150,7 +150,7 @@ func setupMiddleware(app *fiber.App, isProd bool) {
 	app.Use(cors.New(corsConfig))
 
 	// Custom middlewares
-	app.Use(decorators.RequireHTTPS())
+	// app.Use(decorators.RequireHTTPS())
 	app.Use(decorators.Logger())
 	app.Use(decorators.Throttle(100, 60)) // 100 requests per minute
 	app.Use(decorators.DatabaseTransaction(db))

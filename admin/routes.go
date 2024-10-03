@@ -11,6 +11,6 @@ func SetupRoutes(app *fiber.App, views *AdminViews) {
 	admin.Get("/users/new", views.UserCreate)
 	admin.Post("/users", views.UserStore)
 	admin.Get("/users/:id", views.UserEdit)
-	admin.Put("/users/:id", views.UserUpdate)
+	admin.Post("/users/:id", views.UserUpdate)
 	admin.Delete("/users/:id", views.UserDelete)
 }

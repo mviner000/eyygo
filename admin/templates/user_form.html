@@ -1,43 +1,42 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{.Title}}</title>
-    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-</head>
-<body class="bg-gray-100">
-    <div class="container mx-auto px-4 py-8">
-        <h1 class="text-3xl font-bold mb-4">{{.Title}}</h1>
-        <form hx-post="{{if .User}}/admin/users/{{.User.ID}}{{else}}/admin/users{{end}}" hx-redirect="/admin/users" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
-            <div class="mb-4">
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="username">
-                    Username
-                </label>
-                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="username" type="text" name="username" value="{{if .User}}{{.User.Username}}{{end}}" required>
-            </div>
-            <div class="mb-4">
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="email">
-                    Email
-                </label>
-                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="email" type="email" name="email" value="{{if .User}}{{.User.Email}}{{end}}" required>
-            </div>
-            <div class="mb-4">
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="password">
-                    Password
-                </label>
-                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="password" type="password" name="password" {{if not .User}}required{{end}}>
-            </div>
-            <div class="flex items-center justify-between">
-                <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">
-                    {{if .User}}Update{{else}}Create{{end}} User
-                </button>
-                <a href="/admin/users" class="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800">
-                    Cancel
-                </a>
-            </div>
-        </form>
+<form id="userForm" hx-post="{{if .User}}/admin/users/{{.User.ID}}{{else}}/admin/users{{end}}"
+      hx-target="#userList"
+      hx-swap="innerHTML"
+      hx-on::after-request="handleFormResponse(event)"
+      class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+    <div class="mb-4">
+        <label class="block text-gray-700 text-sm font-bold mb-2" for="username">
+            Username
+        </label>
+        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+               id="username" type="text" name="username" value="{{if .User}}{{.User.Username}}{{end}}" required>
+        <p class="text-red-500 text-xs italic error-message" id="username-error"></p>
     </div>
-</body>
-</html>
+    <div class="mb-4">
+        <label class="block text-gray-700 text-sm font-bold mb-2" for="email">
+            Email
+        </label>
+        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+               id="email" type="email" name="email" value="{{if .User}}{{.User.Email}}{{end}}" required>
+        <p class="text-red-500 text-xs italic error-message" id="email-error"></p>
+    </div>
+    <div class="mb-4">
+        <label class="block text-gray-700 text-sm font-bold mb-2" for="password">
+            Password
+        </label>
+        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+               id="password" type="password" name="password" {{if not .User}}required{{end}}>
+        <p class="text-red-500 text-xs italic error-message" id="password-error"></p>
+    </div>
+    <div class="flex items-center justify-between">
+        <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                type="submit">
+            {{if .User}}Update{{else}}Create{{end}} User
+        </button>
+        <button type="button"
+                class="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800"
+                onclick="toggleUserForm()">
+            Cancel
+        </button>
+    </div>
+    <p class="text-red-500 text-xs italic error-message" id="general-error"></p>
+</form>
