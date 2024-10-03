@@ -29,6 +29,17 @@ func GetDB() *gorm.DB {
 	return db
 }
 
+func GetProjectRoot() string {
+	cwd, err := os.Getwd()
+	if err != nil {
+		if AppSettings.Debug {
+			log.Printf("Error getting current working directory: %v", err)
+		}
+		cwd = "."
+	}
+	return cwd
+}
+
 func GetDatabaseURL() string {
 	db := AppSettings.Database
 	var dbURL string
@@ -60,6 +71,41 @@ func GetDatabaseURL() string {
 	}
 	if AppSettings.Debug {
 		log.Printf("Database URL: %s", dbURL)
+	}
+	return dbURL
+}
+
+func GetDatabaseURLForDbmate() string {
+	db := AppSettings.Database
+	var dbURL string
+	switch db.Engine {
+	case "sqlite3":
+		cwd, err := os.Getwd()
+		if err != nil {
+			if AppSettings.Debug {
+				log.Printf("Error getting current working directory: %v", err)
+			}
+			cwd = "."
+		}
+		dbPath := filepath.Join(cwd, db.Name)
+		dbURL = fmt.Sprintf("sqlite3://%s", dbPath)
+	// ... (keep other database cases)
+	default:
+		if AppSettings.Debug {
+			log.Printf("Unsupported database engine: %s, falling back to SQLite", db.Engine)
+		}
+		cwd, err := os.Getwd()
+		if err != nil {
+			if AppSettings.Debug {
+				log.Printf("Error getting current working directory: %v", err)
+			}
+			cwd = "."
+		}
+		dbPath := filepath.Join(cwd, "db.sqlite3")
+		dbURL = fmt.Sprintf("sqlite3://%s", dbPath)
+	}
+	if AppSettings.Debug {
+		log.Printf("Database URL for dbmate: %s", dbURL)
 	}
 	return dbURL
 }

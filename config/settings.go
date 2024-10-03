@@ -18,9 +18,27 @@ const settingsFile = "config/config.json"
 
 func init() {
 	var err error
-	ProjectRoot, err = filepath.Abs(filepath.Join(filepath.Dir(os.Args[0]), ".."))
+	// Get the absolute path of the current executable
+	execPath, err := os.Executable()
 	if err != nil {
-		log.Fatalf("Error finding project root: %v", err)
+		log.Fatalf("Error finding executable path: %v", err)
+	}
+	log.Printf("Executable path: %s", execPath)
+
+	// Get the directory containing the executable
+	execDir := filepath.Dir(execPath)
+	log.Printf("Executable directory: %s", execDir)
+
+	// Set ProjectRoot to the parent directory of the executable
+	ProjectRoot = filepath.Dir(execDir)
+	log.Printf("Project root set to: %s", ProjectRoot)
+
+	// Get the current working directory
+	cwd, err := os.Getwd()
+	if err != nil {
+		log.Printf("Error getting current working directory: %v", err)
+	} else {
+		log.Printf("Current working directory: %s", cwd)
 	}
 
 	loadSettings() // Load settings first

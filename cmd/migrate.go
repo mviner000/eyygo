@@ -4,8 +4,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/mviner000/eyymi/admin"
 	"github.com/mviner000/eyymi/config"
-	"github.com/mviner000/eyymi/types"
 	"github.com/spf13/cobra"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -20,32 +20,66 @@ var MigrateCmd = &cobra.Command{
 }
 
 func runMigrations() {
-	dbURL := config.GetDatabaseURL()
-	config.DebugLog("Using database URL: %s", dbURL)
-
-	// Open a connection to the database
-	db, err := gorm.Open(sqlite.Open(dbURL), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(config.GetDatabaseURL()), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
 	// Run migrations
-	err = db.AutoMigrate(&types.User{})
+	err = db.AutoMigrate(
+		&admin.User{},
+		&admin.Group{},
+		&admin.UserGroup{},
+		// Add other models here
+	)
 	if err != nil {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
-
 	log.Println("Migrations completed successfully.")
+
+	// Create default groups
+	createDefaultGroups(db)
 
 	// Create a superuser if it doesn't exist
 	createSuperUserIfNotExists(db)
 }
 
+func createDefaultGroups(db *gorm.DB) {
+	defaultGroups := []admin.Group{
+		{Name: "Administrators", Description: "Users with full access"},
+		{Name: "Staff", Description: "Users with limited administrative access"},
+		{Name: "Users", Description: "Regular users"},
+	}
+
+	for _, group := range defaultGroups {
+		var existingGroup admin.Group
+		if err := db.Where("name = ?", group.Name).First(&existingGroup).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				if err := db.Create(&group).Error; err != nil {
+					log.Printf("Failed to create group %s: %v", group.Name, err)
+				} else {
+					log.Printf("Group %s created successfully", group.Name)
+				}
+			} else {
+				log.Printf("Error checking for existing group %s: %v", group.Name, err)
+			}
+		} else {
+			log.Printf("Group %s already exists", group.Name)
+		}
+	}
+}
+
 func createSuperUserIfNotExists(db *gorm.DB) {
 	var count int64
-	db.Model(&types.User{}).Where("is_superuser = ?", true).Count(&count)
+	db.Model(&admin.User{}).Where("is_superuser = ?", true).Count(&count)
 	if count == 0 {
-		superuser := types.User{
+		adminGroup := admin.Group{}
+		err := db.Where("name = ?", "Administrators").First(&adminGroup).Error
+		if err != nil {
+			log.Printf("Failed to find Administrators group: %v", err)
+		}
+
+		superuser := admin.User{
 			Username:    "admin",
 			Email:       "admin@example.com",
 			Password:    "adminpassword", // In a real app, hash this password
@@ -53,6 +87,7 @@ func createSuperUserIfNotExists(db *gorm.DB) {
 			IsActive:    true,
 			IsStaff:     true,
 			IsSuperuser: true,
+			Groups:      []admin.Group{adminGroup},
 		}
 		result := db.Create(&superuser)
 		if result.Error != nil {
