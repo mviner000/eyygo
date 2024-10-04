@@ -2,8 +2,11 @@
 package admin
 
 import (
+	"database/sql"
 	"fmt"
+	"log"
 
+	"github.com/mviner000/eyymi/config"
 	"github.com/mviner000/eyymi/fields"
 	"github.com/mviner000/eyymi/operations"
 )
@@ -30,8 +33,31 @@ type User struct {
 
 // GetAllUsers returns a mock list of users
 func GetAllUsers() []User {
-	return []User{
-		{Username: "user1", Email: "user1@example.com"},
-		{Username: "user2", Email: "user2@example.com"},
+	db, err := sql.Open("sqlite3", config.GetDatabaseURL())
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
 	}
+	defer db.Close()
+
+	rows, err := db.Query("SELECT username, email FROM users")
+	if err != nil {
+		log.Fatalf("Failed to query users: %v", err)
+	}
+	defer rows.Close()
+
+	var users []User
+	for rows.Next() {
+		var user User
+		if err := rows.Scan(&user.Username, &user.Email); err != nil {
+			log.Fatalf("Failed to scan user row: %v", err)
+		}
+		users = append(users, user)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Fatalf("Row iteration error: %v", err)
+	}
+
+	log.Printf("Retrieved %d users from the database", len(users))
+	return users
 }

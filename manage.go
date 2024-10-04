@@ -19,6 +19,7 @@ func init() {
 	rootCmd.AddCommand(cmd.StartAppCmd)
 	rootCmd.AddCommand(cmd.DbmateCmd)
 	rootCmd.AddCommand(cmd.MakeMigrationsCmd)
+	rootCmd.AddCommand(cmd.MigrateCmd)
 	// Add more commands as needed
 }
 

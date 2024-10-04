@@ -2,7 +2,10 @@
 package admin
 
 import (
+	"database/sql"
+
 	"github.com/gofiber/fiber/v2"
+	"github.com/mviner000/eyymi/config"
 )
 
 type UserView struct{}
@@ -25,9 +28,18 @@ func (u *UserView) Store(c *fiber.Ctx) error {
 	username := c.FormValue("username")
 	email := c.FormValue("email")
 
-	// Here you would typically save the user to the database
-	// For now, we'll just print the values
-	println("New user:", username, email)
+	// Open the database connection
+	db, err := sql.Open("sqlite3", config.GetDatabaseURL())
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to connect to database")
+	}
+	defer db.Close()
+
+	// Insert the new user into the database
+	_, err = db.Exec("INSERT INTO users (username, email) VALUES (?, ?)", username, email)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to insert user")
+	}
 
 	return c.Redirect("/admin/users")
 }
