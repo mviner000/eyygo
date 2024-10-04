@@ -2,23 +2,14 @@ package fields
 
 import (
 	"fmt"
-
-	"github.com/mviner000/eyymi/utils"
 )
 
-type Options = utils.FieldOptions
-
-type Field interface {
-	GetOptions() Options
-	SQLType() string
-}
-
 type NumericField struct {
-	Options
+	Options    FieldOptions
 	Validators []func(int64) error
 }
 
-func (f NumericField) GetOptions() Options {
+func (f NumericField) GetOptions() FieldOptions {
 	return f.Options
 }
 
@@ -88,9 +79,9 @@ func (f DurationField) SQLType() string {
 	return "BIGINT" // Storing microseconds as a 64-bit integer
 }
 
-func CreateNumericField(name string, fieldType string, options ...func(*Options)) Field {
+func CreateNumericField(name string, fieldType string, options ...func(*FieldOptions)) Field {
 	field := NumericField{
-		Options: Options{
+		Options: FieldOptions{
 			Name:     name,
 			Editable: true,
 			Unique:   false,

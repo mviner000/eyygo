@@ -1,32 +1,25 @@
+// admin/models.go
 package admin
 
 import (
-	"time"
-
-	"gorm.io/gorm"
+	"github.com/mviner000/eyymi/fields"
+	"github.com/mviner000/eyymi/operations"
 )
 
 type User struct {
-	gorm.Model
-	Username    string `gorm:"unique;not null"`
-	Email       string `gorm:"unique;not null"`
-	Password    string `gorm:"not null"`
-	DateJoined  time.Time
-	IsActive    bool    `gorm:"default:true"`
-	IsStaff     bool    `gorm:"default:false"`
-	IsSuperuser bool    `gorm:"default:false"`
-	Groups      []Group `gorm:"many2many:user_groups;"`
+	Username string
 }
 
-type Group struct {
-	gorm.Model
-	Name        string `gorm:"unique;not null"`
-	Description string
-	Users       []User `gorm:"many2many:user_groups;"`
+func main() {
+	// Create a new model for the User and add a CharField in one line
+	userModel := operations.NewModel("users")
+	userModel.AddField("username", fields.CharField("username", 255))
 }
 
-// UserGroup represents the many-to-many relationship between User and Group
-type UserGroup struct {
-	UserID  uint `gorm:"primaryKey"`
-	GroupID uint `gorm:"primaryKey"`
+func GetAllUsers() []User {
+	// This is a stub. Replace it with actual database fetching logic.
+	return []User{
+		{Username: "alice"},
+		{Username: "bob"},
+	}
 }

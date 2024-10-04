@@ -5,19 +5,26 @@ import (
 )
 
 type BooleanField struct {
-	Options
+	FieldOptions
 }
 
 func (f BooleanField) SQLType() string {
 	return "BOOLEAN"
 }
 
-func (f BooleanField) GetOptions() Options {
-	return f.Options
+func (f BooleanField) GetOptions() FieldOptions {
+	return f.FieldOptions
 }
 
+// Common field options
+var (
+	RequiredChar   = []func(*FieldOptions){WithRequired(true)}
+	RequiredUnique = []func(*FieldOptions){WithRequired(true), WithUnique(true)}
+	NullableChar   = []func(*FieldOptions){WithNull(true), WithBlank(true)}
+)
+
 type DateField struct {
-	Options
+	FieldOptions
 	AutoNow    bool
 	AutoNowAdd bool
 }
@@ -26,12 +33,12 @@ func (f DateField) SQLType() string {
 	return "DATE"
 }
 
-func (f DateField) GetOptions() Options {
-	return f.Options
+func (f DateField) GetOptions() FieldOptions {
+	return f.FieldOptions
 }
 
 type TimeField struct {
-	Options
+	FieldOptions
 	AutoNow    bool
 	AutoNowAdd bool
 }
@@ -40,12 +47,12 @@ func (f TimeField) SQLType() string {
 	return "TIME"
 }
 
-func (f TimeField) GetOptions() Options {
-	return f.Options
+func (f TimeField) GetOptions() FieldOptions {
+	return f.FieldOptions
 }
 
 type DateTimeField struct {
-	Options
+	FieldOptions
 	AutoNow    bool
 	AutoNowAdd bool
 }
@@ -54,24 +61,24 @@ func (f DateTimeField) SQLType() string {
 	return "DATETIME"
 }
 
-func (f DateTimeField) GetOptions() Options {
-	return f.Options
+func (f DateTimeField) GetOptions() FieldOptions {
+	return f.FieldOptions
 }
 
 type UUIDField struct {
-	Options
+	FieldOptions
 }
 
 func (f UUIDField) SQLType() string {
 	return "UUID"
 }
 
-func (f UUIDField) GetOptions() Options {
-	return f.Options
+func (f UUIDField) GetOptions() FieldOptions {
+	return f.FieldOptions
 }
 
 type BinaryField struct {
-	Options
+	FieldOptions
 	MaxLength int
 }
 
@@ -82,24 +89,24 @@ func (f BinaryField) SQLType() string {
 	return "BLOB"
 }
 
-func (f BinaryField) GetOptions() Options {
-	return f.Options
+func (f BinaryField) GetOptions() FieldOptions {
+	return f.FieldOptions
 }
 
 type IPAddressField struct {
-	Options
+	FieldOptions
 }
 
 func (f IPAddressField) SQLType() string {
 	return "VARCHAR(39)" // IPv6 addresses can be up to 39 characters long
 }
 
-func (f IPAddressField) GetOptions() Options {
-	return f.Options
+func (f IPAddressField) GetOptions() FieldOptions {
+	return f.FieldOptions
 }
 
 type GenericIPAddressField struct {
-	Options
+	FieldOptions
 	Protocol string // 'both', 'IPv4', or 'IPv6'
 }
 
@@ -107,24 +114,24 @@ func (f GenericIPAddressField) SQLType() string {
 	return "VARCHAR(39)" // IPv6 addresses can be up to 39 characters long
 }
 
-func (f GenericIPAddressField) GetOptions() Options {
-	return f.Options
+func (f GenericIPAddressField) GetOptions() FieldOptions {
+	return f.FieldOptions
 }
 
 type AutoField struct {
-	Options
+	FieldOptions
 }
 
 func (f AutoField) SQLType() string {
 	return "SERIAL PRIMARY KEY"
 }
 
-func (f AutoField) GetOptions() Options {
-	return f.Options
+func (f AutoField) GetOptions() FieldOptions {
+	return f.FieldOptions
 }
 
 type ForeignKey struct {
-	Options
+	FieldOptions
 	RelatedModel string
 	OnDelete     string
 }
@@ -133,12 +140,12 @@ func (f ForeignKey) SQLType() string {
 	return fmt.Sprintf("INTEGER REFERENCES %s(id)", f.RelatedModel)
 }
 
-func (f ForeignKey) GetOptions() Options {
-	return f.Options
+func (f ForeignKey) GetOptions() FieldOptions {
+	return f.FieldOptions
 }
 
 type ManyToManyField struct {
-	Options
+	FieldOptions
 	RelatedModel string
 	ThroughModel string
 }
@@ -148,12 +155,12 @@ func (f ManyToManyField) SQLType() string {
 	return "MANYTOMANY"
 }
 
-func (f ManyToManyField) GetOptions() Options {
-	return f.Options
+func (f ManyToManyField) GetOptions() FieldOptions {
+	return f.FieldOptions
 }
 
 type OneToOneField struct {
-	Options
+	FieldOptions
 	RelatedModel string
 	OnDelete     string
 }
@@ -162,12 +169,12 @@ func (f OneToOneField) SQLType() string {
 	return fmt.Sprintf("INTEGER UNIQUE REFERENCES %s(id)", f.RelatedModel)
 }
 
-func (f OneToOneField) GetOptions() Options {
-	return f.Options
+func (f OneToOneField) GetOptions() FieldOptions {
+	return f.FieldOptions
 }
 
-func CreateSpecialField(name string, fieldType string, options ...func(*Options)) Field {
-	field := Options{
+func CreateSpecialField(name string, fieldType string, options ...func(*FieldOptions)) Field {
+	field := FieldOptions{
 		Name:     name,
 		Editable: true,
 		Unique:   false,
@@ -181,29 +188,29 @@ func CreateSpecialField(name string, fieldType string, options ...func(*Options)
 
 	switch fieldType {
 	case "boolean":
-		return BooleanField{Options: field}
+		return BooleanField{FieldOptions: field}
 	case "date":
-		return DateField{Options: field}
+		return DateField{FieldOptions: field}
 	case "time":
-		return TimeField{Options: field}
+		return TimeField{FieldOptions: field}
 	case "datetime":
-		return DateTimeField{Options: field}
+		return DateTimeField{FieldOptions: field}
 	case "uuid":
-		return UUIDField{Options: field}
+		return UUIDField{FieldOptions: field}
 	case "binary":
-		return BinaryField{Options: field}
+		return BinaryField{FieldOptions: field}
 	case "ip":
-		return IPAddressField{Options: field}
+		return IPAddressField{FieldOptions: field}
 	case "genericip":
-		return GenericIPAddressField{Options: field}
+		return GenericIPAddressField{FieldOptions: field}
 	case "auto":
-		return AutoField{Options: field}
+		return AutoField{FieldOptions: field}
 	case "foreignkey":
-		return ForeignKey{Options: field}
+		return ForeignKey{FieldOptions: field}
 	case "manytomany":
-		return ManyToManyField{Options: field}
+		return ManyToManyField{FieldOptions: field}
 	case "onetoone":
-		return OneToOneField{Options: field}
+		return OneToOneField{FieldOptions: field}
 	default:
 		return nil
 	}
@@ -231,19 +238,6 @@ func WithAutoNowAdd(autoNowAdd bool) func(interface{}) {
 			field.AutoNowAdd = autoNowAdd
 		case *DateTimeField:
 			field.AutoNowAdd = autoNowAdd
-		}
-	}
-}
-
-func WithRelatedModel(relatedModel string) func(interface{}) {
-	return func(f interface{}) {
-		switch field := f.(type) {
-		case *ForeignKey:
-			field.RelatedModel = relatedModel
-		case *ManyToManyField:
-			field.RelatedModel = relatedModel
-		case *OneToOneField:
-			field.RelatedModel = relatedModel
 		}
 	}
 }

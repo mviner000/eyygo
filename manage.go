@@ -16,7 +16,6 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(cmd.ServerCmd)
-	rootCmd.AddCommand(cmd.MigrateCmd)
 	rootCmd.AddCommand(cmd.StartAppCmd)
 	rootCmd.AddCommand(cmd.DbmateCmd)
 	rootCmd.AddCommand(cmd.MakeMigrationsCmd)

@@ -1,16 +1,10 @@
+// admin/urls.go
 package admin
 
 import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func SetupRoutes(app *fiber.App, views *AdminViews) {
-	admin := app.Group("/admin")
-	admin.Get("/", views.Dashboard)
-	admin.Get("/users", views.UserList)
-	admin.Get("/users/new", views.UserCreate)
-	admin.Post("/users", views.UserStore)
-	admin.Get("/users/:id", views.UserEdit)
-	admin.Post("/users/:id", views.UserUpdate)
-	admin.Delete("/users/:id", views.UserDelete)
+func SetupRoutes(app *fiber.App) {
+	app.Get("/admin", (&UserView{}).Index)
 }

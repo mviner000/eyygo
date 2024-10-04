@@ -1,0 +1,16 @@
+<!-- admin/templates/users.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User  List</title>
+</head>
+<body>
+    <h1>User List</h1>
+    <ul>
+        {{range .users}}
+        <li>{{.Username}}</li>
+        {{end}}
+    </ul>
+</body>
+</html>

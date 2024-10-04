@@ -1,4 +1,4 @@
-package utils
+package fields
 
 import (
 	"fmt"
@@ -23,6 +23,13 @@ type FieldOptions struct {
 type Field interface {
 	GetOptions() FieldOptions
 	SQLType() string
+}
+
+func WithRequired(required bool) func(*FieldOptions) {
+	return func(f *FieldOptions) {
+		f.Null = !required
+		f.Blank = !required
+	}
 }
 
 func WithChoices(choices map[string]string) func(*FieldOptions) {

@@ -5,13 +5,13 @@ import (
 )
 
 type TextField struct {
-	Options
+	FieldOptions
 	MaxLength  int
 	Validators []func(string) error
 }
 
-func (f TextField) GetOptions() Options {
-	return f.Options
+func (f TextField) GetOptions() FieldOptions {
+	return f.FieldOptions
 }
 
 func (f TextField) SQLType() string {
@@ -21,29 +21,21 @@ func (f TextField) SQLType() string {
 	return "TEXT"
 }
 
-type CharField struct {
-	TextField
-}
-
-func (f CharField) SQLType() string {
-	return fmt.Sprintf("VARCHAR(%d)", f.MaxLength)
-}
-
 type SlugField struct {
-	CharField
+	CharFieldType
 	AllowUnicode bool
 }
 
 type EmailField struct {
-	CharField
+	CharFieldType
 }
 
 type URLField struct {
-	CharField
+	CharFieldType
 }
 
 type FilePathField struct {
-	CharField
+	CharFieldType
 	Path            string
 	Match           string
 	RecursiveSearch bool
@@ -52,7 +44,7 @@ type FilePathField struct {
 }
 
 type FileField struct {
-	CharField
+	CharFieldType
 	UploadTo string
 	Storage  string
 }
@@ -73,9 +65,9 @@ func (f JSONField) SQLType() string {
 	return "JSON"
 }
 
-func CreateTextField(name string, fieldType string, options ...func(*Options)) Field {
+func CreateTextField(name string, fieldType string, options ...func(*FieldOptions)) Field {
 	field := TextField{
-		Options: Options{
+		FieldOptions: FieldOptions{
 			Name:     name,
 			Editable: true,
 			Unique:   false,
@@ -85,36 +77,30 @@ func CreateTextField(name string, fieldType string, options ...func(*Options)) F
 	}
 
 	for _, option := range options {
-		option(&field.Options)
+		option(&field.FieldOptions)
 	}
 
 	switch fieldType {
 	case "text":
 		return field
 	case "char":
-		return CharField{TextField: field}
+		return CharFieldType{TextField: field}
 	case "slug":
-		return SlugField{CharField: CharField{TextField: field}}
+		return SlugField{CharFieldType: CharFieldType{TextField: field}}
 	case "email":
-		return EmailField{CharField: CharField{TextField: field}}
+		return EmailField{CharFieldType: CharFieldType{TextField: field}}
 	case "url":
-		return URLField{CharField: CharField{TextField: field}}
+		return URLField{CharFieldType: CharFieldType{TextField: field}}
 	case "filepath":
-		return FilePathField{CharField: CharField{TextField: field}}
+		return FilePathField{CharFieldType: CharFieldType{TextField: field}}
 	case "file":
-		return FileField{CharField: CharField{TextField: field}}
+		return FileField{CharFieldType: CharFieldType{TextField: field}}
 	case "image":
-		return ImageField{FileField: FileField{CharField: CharField{TextField: field}}}
+		return ImageField{FileField: FileField{CharFieldType: CharFieldType{TextField: field}}}
 	case "json":
 		return JSONField{TextField: field}
 	default:
 		return nil
-	}
-}
-
-func WithMaxLength(length int) func(*TextField) {
-	return func(tf *TextField) {
-		tf.MaxLength = length
 	}
 }
 
