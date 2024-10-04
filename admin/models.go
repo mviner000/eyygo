@@ -16,6 +16,9 @@ func GetModels() []*operations.Model {
 	// Define a new model for the User
 	userModel := operations.NewModel("users")
 	userModel.AddField(fields.CharField("username", 255, fields.WithRequired(true)))
+	userModel.AddField(fields.CharField("lastname", 255, fields.WithRequired(true)))
+	userModel.AddField(fields.CharField("firstname", 255, fields.WithRequired(true)))
+	userModel.AddField(fields.CharField("middlename", 255, fields.WithRequired(true)))
 	userModel.AddField(fields.CharField("email", 255, fields.WithRequired(true), fields.WithUnique(true)))
 
 	// Generate SQL for creating the table (for debugging purposes)
