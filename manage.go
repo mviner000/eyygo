@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/mviner000/eyymi/cmd"
 	"github.com/mviner000/eyymi/config"
+	"github.com/mviner000/eyymi/eyygo/cmd"
 	"github.com/spf13/cobra"
 )
 

@@ -7,8 +7,8 @@ import (
 	"log"
 
 	"github.com/mviner000/eyymi/config"
-	"github.com/mviner000/eyymi/fields"
-	"github.com/mviner000/eyymi/operations"
+	"github.com/mviner000/eyymi/eyygo/fields"
+	"github.com/mviner000/eyymi/eyygo/operations"
 )
 
 // GetModels defines and returns all the models for the application.

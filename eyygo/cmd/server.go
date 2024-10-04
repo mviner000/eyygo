@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/mviner000/eyymi/core"
+	"github.com/mviner000/eyymi/eyygo/core"
 	"github.com/spf13/cobra"
 )
 

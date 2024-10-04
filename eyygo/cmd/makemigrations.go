@@ -6,10 +6,10 @@ import (
 	"fmt"
 
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/mviner000/eyymi/admin"
 	"github.com/mviner000/eyymi/config"
-	"github.com/mviner000/eyymi/migrations"
-	"github.com/mviner000/eyymi/operations"
+	"github.com/mviner000/eyymi/eyygo/admin"
+	"github.com/mviner000/eyymi/eyygo/migrations"
+	"github.com/mviner000/eyymi/eyygo/operations"
 	"github.com/spf13/cobra"
 )
 

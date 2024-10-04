@@ -4,7 +4,7 @@ package operations
 import (
 	"fmt"
 
-	"github.com/mviner000/eyymi/fields"
+	"github.com/mviner000/eyymi/eyygo/fields"
 )
 
 type Model struct {

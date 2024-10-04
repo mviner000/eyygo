@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/mviner000/eyymi/operations"
+	"github.com/mviner000/eyymi/eyygo/operations"
 )
 
 func DetectChanges(model *operations.Model, db *sql.DB) ([]operations.Operation, error) {

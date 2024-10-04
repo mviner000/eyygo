@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/mviner000/eyymi/types"
-	"github.com/mviner000/eyymi/utils"
+	"github.com/mviner000/eyymi/eyygo/types"
+	"github.com/mviner000/eyymi/eyygo/utils"
 )
 
 var AppSettings types.Settings

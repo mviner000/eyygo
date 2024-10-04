@@ -6,20 +6,41 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+// Updated Response struct to include Template
 type Response struct {
 	StatusCode int
 	Headers    map[string]string
 	Body       interface{}
+	Template   string
 }
 
+// Updated HttpResponseOK function
+func HttpResponseOK(body interface{}, headers map[string]string, template ...string) *Response {
+	var tmpl string
+	if len(template) > 0 {
+		tmpl = template[0]
+	}
+
+	return &Response{
+		StatusCode: http.StatusOK,
+		Headers:    headers,
+		Body:       body,
+		Template:   tmpl,
+	}
+}
+
+// Updated Render function
 func (r *Response) Render(c *fiber.Ctx) error {
 	for key, value := range r.Headers {
 		c.Set(key, value)
 	}
-	if r.Body == nil {
+	if r.Template != "" {
+		return c.Render(r.Template, r.Body)
+	} else if r.Body == nil {
 		return c.SendStatus(r.StatusCode)
+	} else {
+		return c.Status(r.StatusCode).JSON(r.Body)
 	}
-	return c.Status(r.StatusCode).JSON(r.Body)
 }
 
 func HttpResponse(body interface{}, status int, headers map[string]string) *Response {
@@ -28,10 +49,6 @@ func HttpResponse(body interface{}, status int, headers map[string]string) *Resp
 		Headers:    headers,
 		Body:       body,
 	}
-}
-
-func HttpResponseOK(body interface{}, headers map[string]string) *Response {
-	return HttpResponse(body, http.StatusOK, headers)
 }
 
 func HttpResponseCreated(body interface{}, headers map[string]string) *Response {

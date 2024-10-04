@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mviner000/eyymi/operations"
+	"github.com/mviner000/eyymi/eyygo/operations"
 )
 
 func GenerateMigration(ops []operations.Operation) error {

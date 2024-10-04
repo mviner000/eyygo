@@ -36,10 +36,10 @@ func migrate() {
 
 	// List of directories to search for migrations
 	migrationDirs := []string{
-		"admin/migrations",
-		"contenttypes/migrations",
-		"auth/migrations",
-		"sessions/migrations",
+		"eyygo/admin/migrations",
+		"eyygo/contenttypes/migrations",
+		"eyygo/auth/migrations",
+		"eyygo/sessions/migrations",
 		// Add more directories as needed
 	}
 

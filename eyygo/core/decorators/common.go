@@ -3,7 +3,7 @@ package decorators
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/mviner000/eyymi/config"
-	"github.com/mviner000/eyymi/types"
+	"github.com/mviner000/eyymi/eyygo/types"
 	"gorm.io/gorm"
 )
 

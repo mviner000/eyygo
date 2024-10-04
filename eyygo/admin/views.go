@@ -6,6 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/mviner000/eyymi/config"
+	"github.com/mviner000/eyymi/eyygo/http"
 )
 
 type UserView struct{}
@@ -13,14 +14,15 @@ type UserView struct{}
 // Index handles the listing of users
 func (u *UserView) Index(c *fiber.Ctx) error {
 	users := GetAllUsers()
-	return c.Render("admin/templates/users_list", fiber.Map{
+	response := http.HttpResponseOK(fiber.Map{
 		"users": users,
-	})
+	}, nil, "eyygo/admin/templates/users_list") // Provide the template name
+	return response.Render(c)
 }
 
 // Create renders the form for creating a new user
 func (u *UserView) Create(c *fiber.Ctx) error {
-	return c.Render("admin/templates/user_create", fiber.Map{})
+	return http.HttpResponseOK(fiber.Map{}, nil, "eyygo/admin/templates/user_create").Render(c) // Provide the template name
 }
 
 // Store handles the form submission for creating a new user
@@ -31,15 +33,16 @@ func (u *UserView) Store(c *fiber.Ctx) error {
 	// Open the database connection
 	db, err := sql.Open("sqlite3", config.GetDatabaseURL())
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to connect to database")
+		return http.HttpResponseServerError(err.Error(), nil).Render(c)
 	}
 	defer db.Close()
 
 	// Insert the new user into the database
 	_, err = db.Exec("INSERT INTO users (username, email) VALUES (?, ?)", username, email)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to insert user")
+		return http.HttpResponseServerError(err.Error(), nil).Render(c)
 	}
 
-	return c.Redirect("/admin/users")
+	// Redirect to the users list page
+	return http.HttpResponseRedirect("/admin/users", false).Render(c)
 }
