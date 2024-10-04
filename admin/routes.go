@@ -1,4 +1,4 @@
-// admin/urls.go
+// admin/routes.go
 package admin
 
 import (
@@ -6,5 +6,9 @@ import (
 )
 
 func SetupRoutes(app *fiber.App) {
-	app.Get("/admin", (&UserView{}).Index)
+	userView := &UserView{}
+
+	app.Get("/admin/users", userView.Index)
+	app.Get("/admin/users/create", userView.Create)
+	app.Post("/admin/users", userView.Store)
 }

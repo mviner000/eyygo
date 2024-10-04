@@ -1,14 +1,16 @@
+// cmd/makemigrations.go
 package cmd
 
 import (
+	"database/sql"
 	"fmt"
 
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/mviner000/eyymi/admin"
 	"github.com/mviner000/eyymi/config"
 	"github.com/mviner000/eyymi/migrations"
+	"github.com/mviner000/eyymi/operations"
 	"github.com/spf13/cobra"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 )
 
 var MakeMigrationsCmd = &cobra.Command{
@@ -20,25 +22,31 @@ var MakeMigrationsCmd = &cobra.Command{
 }
 
 func makeMigrations() {
-	db, err := gorm.Open(sqlite.Open(config.GetDatabaseURL()), &gorm.Config{})
+	db, err := sql.Open("sqlite3", config.GetDatabaseURL())
 	if err != nil {
 		fmt.Printf("Failed to connect to database: %v\n", err)
 		return
 	}
+	defer db.Close()
 
-	// Add all your models here
-	models := []interface{}{
-		&admin.User{},
-		// Add other models here
+	models := admin.GetModels()
+
+	var allOps []operations.Operation
+	for _, model := range models {
+		ops, err := migrations.DetectChanges(model, db)
+		if err != nil {
+			fmt.Printf("Error detecting changes for model %s: %v\n", model.TableName, err)
+			return
+		}
+		allOps = append(allOps, ops...)
 	}
 
-	diffs, err := migrations.DetectChanges(db, models...)
-	if err != nil {
-		fmt.Printf("Error detecting changes: %v\n", err)
+	if len(allOps) == 0 {
+		fmt.Println("No changes detected.")
 		return
 	}
 
-	err = migrations.GenerateMigration(diffs)
+	err = migrations.GenerateMigration(allOps)
 	if err != nil {
 		fmt.Printf("Error generating migration: %v\n", err)
 		return
