@@ -1,1 +1,0 @@
-ALTER TABLE users ADD COLUMN middlename VARCHAR(255);

@@ -1,4 +1,3 @@
-// cmd/migrate.go
 package cmd
 
 import (
@@ -35,10 +34,37 @@ func migrate() {
 		log.Fatalf("Failed to ensure migrations table exists: %v\n", err)
 	}
 
-	migrationsDir := "admin/migrations"
+	// List of directories to search for migrations
+	migrationDirs := []string{
+		"admin/migrations",
+		"contenttypes/migrations",
+		"auth/migrations",
+		"sessions/migrations",
+		// Add more directories as needed
+	}
+
+	failedDirs := []string{}
+	for _, dir := range migrationDirs {
+		if applyMigrationsFromDir(db, dir) {
+			failedDirs = append(failedDirs, dir)
+		}
+	}
+
+	if len(failedDirs) > 0 {
+		log.Printf("Migrations failed in the following directories:\n")
+		for _, dir := range failedDirs {
+			log.Printf("- %s\n", dir)
+		}
+	} else {
+		log.Println("All migrations applied successfully.")
+	}
+}
+
+func applyMigrationsFromDir(db *sql.DB, migrationsDir string) (failed bool) {
 	files, err := ioutil.ReadDir(migrationsDir)
 	if err != nil {
-		log.Fatalf("Failed to read migrations directory: %v\n", err)
+		log.Printf("Failed to read migrations directory %s: %v\n", migrationsDir, err)
+		return true
 	}
 
 	// Sort files by name to ensure they're applied in order
@@ -48,37 +74,41 @@ func migrate() {
 
 	for _, file := range files {
 		if filepath.Ext(file.Name()) == ".sql" {
+			// Construct the full path of the migration file
+			filePath := filepath.Join(migrationsDir, file.Name())
+
 			// Check if this migration has already been applied
 			var exists int
-			err = db.QueryRow("SELECT COUNT(*) FROM migrations WHERE filename = ?", file.Name()).Scan(&exists)
+			err = db.QueryRow("SELECT COUNT(*) FROM migrations WHERE filename = ?", filePath).Scan(&exists)
 			if err != nil {
-				log.Fatalf("Failed to check if migration %s has been applied: %v\n", file.Name(), err)
+				log.Fatalf("Failed to check if migration %s has been applied: %v\n", filePath, err)
 			}
 
 			if exists > 0 {
-				fmt.Printf("Skipping already applied migration: %s\n", file.Name())
+				fmt.Printf("\033[34mSkipping already applied migration: %s from directory %s\033[0m\n", file.Name(), migrationsDir)
 				continue
 			}
 
 			// Read and execute the SQL file
-			filePath := filepath.Join(migrationsDir, file.Name())
 			sqlContent, err := ioutil.ReadFile(filePath)
 			if err != nil {
-				log.Fatalf("Failed to read migration file %s: %v\n", file.Name(), err)
+				log.Fatalf("Failed to read migration file %s: %v\n", filePath, err)
 			}
 
 			_, err = db.Exec(string(sqlContent))
 			if err != nil {
-				log.Fatalf("Failed to execute migration %s: %v\n", file.Name(), err)
+				fmt.Printf("\033[31mFailed to execute migration %s in directory %s: %v\033[0m\n", file.Name(), migrationsDir, err)
+				return true
 			}
 
 			// Record the migration as applied
-			_, err = db.Exec("INSERT INTO migrations (filename) VALUES (?)", file.Name())
+			_, err = db.Exec("INSERT INTO migrations (filename) VALUES (?)", filePath)
 			if err != nil {
-				log.Fatalf("Failed to record migration %s: %v\n", file.Name(), err)
+				log.Fatalf("Failed to record migration %s: %v\n", filePath, err)
 			}
 
-			fmt.Printf("Applied migration: %s\n", file.Name())
+			fmt.Printf("\033[32mApplied migration: %s from directory %s\033[0m\n", file.Name(), migrationsDir)
 		}
 	}
+	return false
 }
