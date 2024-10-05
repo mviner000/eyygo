@@ -9,19 +9,19 @@ import (
 var debugLogger *log.Logger
 
 func init() {
-	// Initialize debugLogger immediately
+	// Initialize debugLogger immediately with default output
 	debugLogger = log.New(os.Stdout, "DEBUG: ", log.Ldate|log.Ltime|log.Lshortfile)
 }
 
-func initLogger() {
-	if !AppSettings.Debug {
+func InitLogger(debug bool) {
+	if !debug {
 		debugLogger.SetOutput(io.Discard)
 		log.SetOutput(io.Discard)
 	}
 }
 
 func DebugLog(format string, v ...interface{}) {
-	if AppSettings.Debug {
+	if debugLogger != nil {
 		debugLogger.Printf(format, v...)
 	}
 }

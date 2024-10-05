@@ -1,9 +1,11 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/mviner000/eyymi/app"
 )
 
 // Updated Response struct to include Template
@@ -29,13 +31,18 @@ func HttpResponseOK(body interface{}, headers map[string]string, template ...str
 	}
 }
 
-// Updated Render function
 func (r *Response) Render(c *fiber.Ctx) error {
 	for key, value := range r.Headers {
 		c.Set(key, value)
 	}
 	if r.Template != "" {
-		return c.Render(r.Template, r.Body)
+		// Dynamically resolve the template path using AppSettings
+		templatePath := app.Settings.TemplateBasePath + r.Template
+
+		// Log the template path for debugging
+		fmt.Println("Rendering template at path:", templatePath)
+
+		return c.Render(templatePath, r.Body)
 	} else if r.Body == nil {
 		return c.SendStatus(r.StatusCode)
 	} else {

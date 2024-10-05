@@ -74,4 +74,5 @@ yarn-error.log*
 
 bun.lockb
 
+# Ignore the built binary
 eyymi

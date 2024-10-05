@@ -12,6 +12,9 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "manage",
 	Short: "Project management tool for your Go application",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		config.InitConfig()
+	},
 }
 
 func init() {
@@ -24,7 +27,6 @@ func init() {
 }
 
 func main() {
-	config.InitConfig()
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)

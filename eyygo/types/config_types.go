@@ -11,14 +11,15 @@ type DatabaseConfig struct {
 }
 
 type Settings struct {
-	Environment    string         `json:"environment"`
-	WebSocketPort  string         `json:"webSocketPort"`
-	AllowedOrigins string         `json:"allowedOrigins"`
-	CertFile       string         `json:"certFile"`
-	KeyFile        string         `json:"keyFile"`
-	LogFile        string         `json:"logFile"`
-	IsDevelopment  bool           `json:"isDevelopment"`
-	Debug          bool           `json:"debug"`
-	InstalledApps  []string       `json:"installedApps"`
-	Database       DatabaseConfig `json:"database"`
+	Environment      string         `json:"environment"`
+	WebSocketPort    string         `json:"webSocketPort"`
+	AllowedOrigins   string         `json:"allowedOrigins"`
+	CertFile         string         `json:"certFile"`
+	KeyFile          string         `json:"keyFile"`
+	LogFile          string         `json:"logFile"`
+	IsDevelopment    bool           `json:"isDevelopment"`
+	Debug            bool           `json:"debug"`
+	InstalledApps    []string       `json:"installedApps"`
+	Database         DatabaseConfig `json:"database"`
+	TemplateBasePath string
 }

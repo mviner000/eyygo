@@ -41,8 +41,8 @@ func init() {
 		log.Printf("Current working directory: %s", cwd)
 	}
 
-	loadSettings() // Load settings first
-	initLogger()   // Then initialize logger
+	loadSettings()                // Load settings first
+	InitLogger(AppSettings.Debug) // Initialize logger with debug setting
 
 	if AppSettings.Debug {
 		DebugLog("Debug: %v", AppSettings.Debug)
