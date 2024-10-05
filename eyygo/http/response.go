@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/mviner000/eyymi/app"
+	"github.com/mviner000/eyymi/app_name"
 )
 
 // Updated Response struct to include Template
@@ -37,7 +37,7 @@ func (r *Response) Render(c *fiber.Ctx) error {
 	}
 	if r.Template != "" {
 		// Dynamically resolve the template path using AppSettings
-		templatePath := app.Settings.TemplateBasePath + r.Template
+		templatePath := app_name.Settings.TemplateBasePath + r.Template
 
 		// Log the template path for debugging
 		fmt.Println("Rendering template at path:", templatePath)

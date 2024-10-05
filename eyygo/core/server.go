@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/template/html/v2"
+	"github.com/mviner000/eyymi/app_name"
 	"github.com/mviner000/eyymi/config"
 	"github.com/mviner000/eyymi/eyygo/admin"
 	"github.com/mviner000/eyymi/eyygo/core/decorators"
@@ -35,16 +35,29 @@ func init() {
 	if appLogger == nil {
 		appLogger = log.New(os.Stdout, "CORE: ", log.Ldate|log.Ltime|log.Lshortfile)
 	}
-	reverb.SetLogger(appLogger)
 
-	var err error
-	db, err = gorm.Open(sqlite.Open(config.GetDatabaseURL()), &gorm.Config{})
+	// Set the default time zone
+	loc, err := time.LoadLocation(config.AppSettings.TimeZone)
+	if err != nil {
+		appLogger.Fatalf("Invalid time zone: %v", err)
+	}
+	time.Local = loc
+
+	// Add this debug logging
+	appLogger.Printf("Time zone set to: %s", config.AppSettings.TimeZone)
+
+	db, err = gorm.Open(sqlite.Open(config.AppSettings.Database.Name), &gorm.Config{})
 	if err != nil {
 		appLogger.Fatalf("Failed to connect to database: %v", err)
 	}
 }
 
+func ReloadSettings() {
+	config.LoadSettings(app_name.Settings) // Reload settings using the default settings from app_name
+}
+
 func RunCommand() {
+	ReloadSettings() // Ensure settings are reloaded at the start
 	if config.IsDevelopment() {
 		setupDevelopmentServer()
 	} else {
@@ -124,7 +137,23 @@ func setupRoutes(app *fiber.App) {
 	}
 }
 
-func setupMiddleware(app *fiber.App, isProd bool) {
+func customCORS() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		c.Set("Access-Control-Allow-Origin", "*")
+		c.Set("Access-Control-Allow-Methods", "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS")
+		c.Set("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization")
+		c.Set("Access-Control-Allow-Credentials", "true")
+
+		// Handle preflight requests
+		if c.Method() == fiber.MethodOptions {
+			return c.SendStatus(fiber.StatusNoContent)
+		}
+
+		return c.Next()
+	}
+}
+
+func setupMiddleware(app *fiber.App) {
 	// Recover middleware
 	app.Use(recover.New())
 
@@ -132,21 +161,11 @@ func setupMiddleware(app *fiber.App, isProd bool) {
 	app.Use(logger.New(logger.Config{
 		Format:     "${time} ${status} - ${method} ${path}\n",
 		TimeFormat: "2006-01-02 15:04:05",
-		TimeZone:   "Local",
+		TimeZone:   config.AppSettings.TimeZone,
 	}))
 
-	// CORS middleware
-	corsConfig := cors.Config{
-		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
-		AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
-		AllowCredentials: true,
-	}
-	if isProd {
-		corsConfig.AllowOrigins = config.GetAllowedOrigins()
-	} else {
-		corsConfig.AllowOrigins = "*"
-	}
-	app.Use(cors.New(corsConfig))
+	// Use custom CORS middleware
+	app.Use(customCORS())
 
 	// Custom middlewares
 	// app.Use(decorators.RequireHTTPS())
@@ -161,11 +180,11 @@ func setupDevelopmentServer() {
 		ReadTimeout: 5 * time.Second,
 	})
 
-	setupMiddleware(app, false)
+	setupMiddleware(app) // Removed the second argument
 	reverb.SetupWebSocket(app)
 	setupRoutes(app)
 
-	wsPort := config.GetWebSocketPort()
+	wsPort := config.AppSettings.WebSocket.Port
 
 	if config.AppSettings.Debug {
 		appLogger.Printf("Development server started on http://127.0.0.1:%s", wsPort)
@@ -185,16 +204,16 @@ func setupProductionServer() {
 		IdleTimeout:  120 * time.Second,
 	})
 
-	setupMiddleware(app, true)
+	setupMiddleware(app) // Removed the second argument
 	reverb.SetupWebSocket(app)
 	setupRoutes(app)
 
-	wsPort := config.GetWebSocketPort()
-	certFile := config.GetCertFile()
-	keyFile := config.GetKeyFile()
+	wsPort := config.AppSettings.WebSocket.Port
+	certFile := config.AppSettings.CertFile
+	keyFile := config.AppSettings.KeyFile
 
 	if config.AppSettings.Debug {
-		appLogger.Printf("Allowed origins: %s", config.GetAllowedOrigins())
+		appLogger.Printf("Allowed origins: %s", config.AppSettings.AllowedOrigins)
 	}
 
 	if certFile != "" && keyFile != "" {

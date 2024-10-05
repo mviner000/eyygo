@@ -1,4 +1,4 @@
-package app
+package app_name
 
 import (
 	"github.com/mviner000/eyymi/config"
@@ -19,9 +19,15 @@ var Settings = config.SettingsStruct{
 	WebSocket: config.WebSocketConfig{
 		Port: "3000",
 	},
-	AllowedOrigins: "https://eyymi.site",
-	CertFile:       "",
-	KeyFile:        "",
-	LogFile:        "server.log",
-	Debug:          false,
+	CertFile:      "",
+	KeyFile:       "",
+	LogFile:       "server.log",
+	Debug:         false,
+	TimeZone:      "Asia/Singapore",
+	Environment:   "development", // Added missing field
+	InstalledApps: []string{},    // Added missing field
+}
+
+func init() {
+	config.LoadSettings(Settings)
 }

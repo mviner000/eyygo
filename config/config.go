@@ -1,23 +1,26 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 
-	"github.com/mviner000/eyymi/eyygo/types"
+	"github.com/joho/godotenv"
 	"github.com/mviner000/eyymi/eyygo/utils"
 )
 
-var AppSettings types.Settings
+var AppSettings SettingsStruct
 var ProjectRoot string
-
-const settingsFile = "config/config.json"
 
 func init() {
 	var err error
+	// Load .env file
+	err = godotenv.Load()
+	if err != nil {
+		log.Printf("Error loading .env file: %v", err)
+	}
+
 	// Get the absolute path of the current executable
 	execPath, err := os.Executable()
 	if err != nil {
@@ -40,39 +43,30 @@ func init() {
 	} else {
 		log.Printf("Current working directory: %s", cwd)
 	}
-
-	loadSettings()                // Load settings first
-	InitLogger(AppSettings.Debug) // Initialize logger with debug setting
-
-	if AppSettings.Debug {
-		DebugLog("Debug: %v", AppSettings.Debug)
-		DebugLog("Project root: %s", ProjectRoot)
-	}
 }
 
-func loadSettings() {
-	cwd, err := os.Getwd()
-	if err != nil {
-		log.Fatalf("Error getting current working directory: %v", err)
-	}
-
-	configPath := filepath.Join(cwd, settingsFile)
-
-	file, err := os.Open(configPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			AppSettings = getDefaultSettings()
-			saveSettings()
-		} else {
-			log.Fatalf("Error opening config file: %v", err)
-		}
-	} else {
-		defer file.Close()
-		decoder := json.NewDecoder(file)
-		err = decoder.Decode(&AppSettings)
-		if err != nil {
-			log.Fatalf("Error decoding config file: %v", err)
-		}
+// LoadSettings loads the application settings, using the provided defaults
+func LoadSettings(defaultSettings SettingsStruct) {
+	AppSettings = SettingsStruct{
+		Environment:    getEnv("NODE_ENV", defaultSettings.Environment),
+		AllowedOrigins: getEnv("ALLOWED_ORIGINS", defaultSettings.AllowedOrigins),
+		CertFile:       getEnv("CERT_FILE", defaultSettings.CertFile),
+		KeyFile:        getEnv("KEY_FILE", defaultSettings.KeyFile),
+		LogFile:        getEnv("LOG_FILE", defaultSettings.LogFile),
+		Debug:          getEnv("DEBUG", fmt.Sprintf("%v", defaultSettings.Debug)) == "true",
+		TimeZone:       getEnv("TIME_ZONE", defaultSettings.TimeZone),
+		InstalledApps:  defaultSettings.InstalledApps,
+		Database: DatabaseConfig{
+			Engine:   getEnv("DB_ENGINE", defaultSettings.Database.Engine),
+			Name:     getEnv("DB_NAME", defaultSettings.Database.Name),
+			User:     getEnv("DB_USER", defaultSettings.Database.User),
+			Password: getEnv("DB_PASSWORD", defaultSettings.Database.Password),
+			Host:     getEnv("DB_HOST", defaultSettings.Database.Host),
+			Port:     getEnv("DB_PORT", defaultSettings.Database.Port),
+		},
+		WebSocket: WebSocketConfig{
+			Port: getEnv("WS_PORT", defaultSettings.WebSocket.Port),
+		},
 	}
 
 	AppSettings.IsDevelopment = AppSettings.Environment == "development"
@@ -80,53 +74,25 @@ func loadSettings() {
 	// Print debug status immediately after loading
 	fmt.Printf("Debug setting loaded: %v\n", AppSettings.Debug)
 
+	// Log the allowed origins
+	log.Printf("ALLOWED_ORIGINS: %s\n", AppSettings.AllowedOrigins)
+
 	// Use DebugLog instead of fmt.Printf for consistency
-	DebugLog("Successfully loaded settings from %s", configPath)
+	DebugLog("Successfully loaded settings from environment variables")
 	DebugLog("Database Engine: %s", AppSettings.Database.Engine)
 	DebugLog("Database Name: %s", AppSettings.Database.Name)
 }
 
-func getDefaultSettings() types.Settings {
-	getEnv := utils.GetEnv
-
-	return types.Settings{
-		Environment:    getEnv("NODE_ENV", "development"),
-		WebSocketPort:  getEnv("WS_PORT", "3000"),
-		AllowedOrigins: getEnv("ALLOWED_ORIGINS", "https://eyymi.site"),
-		CertFile:       getEnv("CERT_FILE", ""),
-		KeyFile:        getEnv("KEY_FILE", ""),
-		LogFile:        getEnv("LOG_FILE", "server.log"),
-		Debug:          getEnv("DEBUG", "false") == "true",
-		InstalledApps:  []string{},
-		Database: types.DatabaseConfig{
-			Engine:   getEnv("DB_ENGINE", "sqlite3"),
-			Name:     getEnv("DB_NAME", "db.sqlite3"),
-			User:     getEnv("DB_USER", ""),
-			Password: getEnv("DB_PASSWORD", ""),
-			Host:     getEnv("DB_HOST", ""),
-			Port:     getEnv("DB_PORT", ""),
-			Options:  make(map[string]string),
-		},
+// getEnv retrieves the environment variable or returns the default value
+func getEnv(key, defaultValue string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
 	}
-}
-
-func saveSettings() {
-	file, err := os.Create(settingsFile)
-	if err != nil {
-		log.Fatalf("Error creating config file: %v", err)
-	}
-	defer file.Close()
-
-	encoder := json.NewEncoder(file)
-	encoder.SetIndent("", "  ")
-	err = encoder.Encode(AppSettings)
-	if err != nil {
-		log.Fatalf("Error encoding config file: %v", err)
-	}
+	return defaultValue
 }
 
 func GetWebSocketPort() string {
-	return AppSettings.WebSocketPort
+	return AppSettings.WebSocket.Port
 }
 
 func GetAllowedOrigins() string {
@@ -134,7 +100,7 @@ func GetAllowedOrigins() string {
 }
 
 func IsDevelopment() bool {
-	return AppSettings.IsDevelopment
+	return AppSettings.Environment == "development" || AppSettings.Debug
 }
 
 func GetCertFile() string {
@@ -152,6 +118,5 @@ func GetInstalledApps() []string {
 func AddInstalledApp(appName string) {
 	if !utils.Contains(AppSettings.InstalledApps, appName) {
 		AppSettings.InstalledApps = append(AppSettings.InstalledApps, appName)
-		saveSettings()
 	}
 }
