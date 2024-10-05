@@ -18,10 +18,10 @@ var (
 	once sync.Once
 )
 
-func GetDB() *gorm.DB {
+func GetDB(cfg Config) *gorm.DB {
 	once.Do(func() {
 		var err error
-		db, err = gorm.Open(sqlite.Open(GetDatabaseURL()), &gorm.Config{})
+		db, err = gorm.Open(sqlite.Open(GetDatabaseURL(cfg)), &gorm.Config{})
 		if err != nil {
 			log.Fatalf("Failed to connect to database: %v", err)
 		}
@@ -29,10 +29,10 @@ func GetDB() *gorm.DB {
 	return db
 }
 
-func GetProjectRoot() string {
+func GetProjectRoot(cfg Config) string {
 	cwd, err := os.Getwd()
 	if err != nil {
-		if AppSettings.Debug {
+		if cfg.IsDebug() {
 			log.Printf("Error getting current working directory: %v", err)
 		}
 		cwd = "."
@@ -40,63 +40,54 @@ func GetProjectRoot() string {
 	return cwd
 }
 
-func GetDatabaseURL() string {
-	db := AppSettings.Database
+func GetDatabaseURL(cfg Config) string {
+	db := cfg.GetDatabaseConfig()
 	var dbURL string
 	switch db.Engine {
 	case "sqlite3":
-		cwd, err := os.Getwd()
+		dbPath, err := filepath.Abs(db.Name)
 		if err != nil {
-			if AppSettings.Debug {
-				log.Printf("Error getting current working directory: %v", err)
-			}
-			cwd = "."
+			log.Printf("Error getting absolute path for database: %v", err)
+			dbPath = db.Name
 		}
-		dbPath := filepath.Join(cwd, db.Name)
-		dbURL = dbPath // Ent expects the file path for SQLite, not a URL
-	// ... (keep other database cases)
+		dbURL = dbPath
 	default:
-		if AppSettings.Debug {
-			log.Printf("Unsupported database engine: %s, falling back to SQLite", db.Engine)
-		}
-		cwd, err := os.Getwd()
+		log.Printf("Unsupported database engine: %s, falling back to SQLite", db.Engine)
+		dbPath, err := filepath.Abs("db.sqlite3")
 		if err != nil {
-			if AppSettings.Debug {
-				log.Printf("Error getting current working directory: %v", err)
-			}
-			cwd = "."
+			log.Printf("Error getting absolute path for default database: %v", err)
+			dbPath = "db.sqlite3"
 		}
-		dbPath := filepath.Join(cwd, "db.sqlite3")
 		dbURL = dbPath
 	}
-	if AppSettings.Debug {
+
+	if cfg.IsDebug() {
 		log.Printf("Database URL: %s", dbURL)
 	}
 	return dbURL
 }
 
-func GetDatabaseURLForDbmate() string {
-	db := AppSettings.Database
+func GetDatabaseURLForDbmate(cfg Config) string {
+	db := cfg.GetDatabaseConfig()
 	var dbURL string
 	switch db.Engine {
 	case "sqlite3":
 		cwd, err := os.Getwd()
 		if err != nil {
-			if AppSettings.Debug {
+			if cfg.IsDebug() {
 				log.Printf("Error getting current working directory: %v", err)
 			}
 			cwd = "."
 		}
 		dbPath := filepath.Join(cwd, db.Name)
 		dbURL = fmt.Sprintf("sqlite3://%s", dbPath)
-	// ... (keep other database cases)
 	default:
-		if AppSettings.Debug {
+		if cfg.IsDebug() {
 			log.Printf("Unsupported database engine: %s, falling back to SQLite", db.Engine)
 		}
 		cwd, err := os.Getwd()
 		if err != nil {
-			if AppSettings.Debug {
+			if cfg.IsDebug() {
 				log.Printf("Error getting current working directory: %v", err)
 			}
 			cwd = "."
@@ -104,25 +95,25 @@ func GetDatabaseURLForDbmate() string {
 		dbPath := filepath.Join(cwd, "db.sqlite3")
 		dbURL = fmt.Sprintf("sqlite3://%s", dbPath)
 	}
-	if AppSettings.Debug {
+	if cfg.IsDebug() {
 		log.Printf("Database URL for dbmate: %s", dbURL)
 	}
 	return dbURL
 }
 
-func EnsureDatabaseExists() error {
-	if AppSettings.Database.Engine == "sqlite3" {
+func EnsureDatabaseExists(cfg Config) error {
+	if cfg.GetDatabaseConfig().Engine == "sqlite3" {
 		cwd, err := os.Getwd()
 		if err != nil {
 			return fmt.Errorf("error getting current working directory: %v", err)
 		}
-		dbPath := filepath.Join(cwd, AppSettings.Database.Name)
+		dbPath := filepath.Join(cwd, cfg.GetDatabaseConfig().Name)
 		return utils.EnsureFileExists(dbPath)
 	}
 	return nil
 }
 
-func InitConfig() {
+func InitConfig(cfg Config) {
 	// Set default values
 	viper.SetDefault("debug", false)
 	viper.SetDefault("database.engine", "sqlite3")
@@ -144,27 +135,34 @@ func InitConfig() {
 	}
 
 	// Unmarshal config into AppSettings
-	if err := viper.Unmarshal(&AppSettings); err != nil {
+	var settings SettingsStruct
+	if err := viper.Unmarshal(&settings); err != nil {
 		log.Fatalf("Unable to decode config into struct: %v", err)
 	}
 
 	// Override with environment variables if present
 	if os.Getenv("DEBUG") != "" {
-		AppSettings.Debug = os.Getenv("DEBUG") == "true"
+		cfg.SetDebug(os.Getenv("DEBUG") == "true")
 	}
 	if os.Getenv("DB_ENGINE") != "" {
-		AppSettings.Database.Engine = os.Getenv("DB_ENGINE")
+		dbConfig := cfg.GetDatabaseConfig()
+		dbConfig.Engine = os.Getenv("DB_ENGINE")
+		cfg.SetDatabaseConfig(dbConfig)
 	}
 	if os.Getenv("DB_NAME") != "" {
-		AppSettings.Database.Name = os.Getenv("DB_NAME")
+		dbConfig := cfg.GetDatabaseConfig()
+		dbConfig.Name = os.Getenv("DB_NAME")
+		cfg.SetDatabaseConfig(dbConfig)
 	}
 
+	InitLogger(cfg.IsDebug())
+
 	// Ensure the database file exists (for SQLite)
-	if err := EnsureDatabaseExists(); err != nil {
+	if err := EnsureDatabaseExists(cfg); err != nil {
 		log.Fatalf("Failed to ensure database exists: %v", err)
 	}
 
-	if AppSettings.Debug {
+	if cfg.IsDebug() {
 		log.Println("Configuration initialized")
 	}
 }

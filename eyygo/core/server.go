@@ -14,6 +14,7 @@ import (
 	"github.com/mviner000/eyymi/app_name"
 	"github.com/mviner000/eyymi/config"
 	"github.com/mviner000/eyymi/eyygo/admin"
+	"github.com/mviner000/eyymi/eyygo/constants"
 	"github.com/mviner000/eyymi/eyygo/core/decorators"
 	"github.com/mviner000/eyymi/eyygo/monitor"
 	"github.com/mviner000/eyymi/eyygo/reverb"
@@ -37,31 +38,38 @@ func init() {
 	}
 
 	// Set the default time zone
-	loc, err := time.LoadLocation(config.AppSettings.TimeZone)
+	loc, err := time.LoadLocation(app_name.AppSettings.TimeZone)
 	if err != nil {
 		appLogger.Fatalf("Invalid time zone: %v", err)
 	}
 	time.Local = loc
 
 	// Add this debug logging
-	appLogger.Printf("Time zone set to: %s", config.AppSettings.TimeZone)
+	config.DebugLogf("Time zone set to: %s", app_name.AppSettings.TimeZone)
 
-	db, err = gorm.Open(sqlite.Open(config.AppSettings.Database.Name), &gorm.Config{})
+	db, err = gorm.Open(sqlite.Open(app_name.AppSettings.Database.Name), &gorm.Config{})
 	if err != nil {
 		appLogger.Fatalf("Failed to connect to database: %v", err)
 	}
 }
 
 func ReloadSettings() {
-	config.LoadSettings(app_name.Settings) // Reload settings using the default settings from app_name
+	app_name.LoadSettings() // Reload settings using the function from app_name
+	log.Println("Settings reloaded")
 }
 
 func RunCommand() {
 	ReloadSettings() // Ensure settings are reloaded at the start
-	if config.IsDevelopment() {
-		setupDevelopmentServer()
-	} else {
+
+	nodeEnv := os.Getenv("NODE_ENV")
+	isProduction := nodeEnv == "production"
+
+	if isProduction {
+		config.DebugLogf("Running in production mode")
 		setupProductionServer()
+	} else {
+		config.DebugLogf("Running in development mode")
+		setupDevelopmentServer()
 	}
 }
 
@@ -89,7 +97,7 @@ func getAppPackage(appName string) (App, error) {
 func setupAppRoutes(app *fiber.App, appName string) {
 	appPackage, err := getAppPackage(appName)
 	if err != nil {
-		if config.AppSettings.Debug {
+		if app_name.AppSettings.Debug {
 			appLogger.Printf("Error setting up app: %v", err)
 		}
 		return
@@ -97,16 +105,16 @@ func setupAppRoutes(app *fiber.App, appName string) {
 
 	if appPackage != nil {
 		appPackage.SetupRoutes(app)
-		if config.AppSettings.Debug {
+		if app_name.AppSettings.Debug {
 			appLogger.Printf("Routes set up for app: %s", appName)
 		}
-	} else if config.AppSettings.Debug {
+	} else if app_name.AppSettings.Debug {
 		appLogger.Printf("Failed to set up routes for app: %s", appName)
 	}
 }
 
 func setupRoutes(app *fiber.App) {
-	if config.AppSettings.Debug {
+	if app_name.AppSettings.Debug {
 		appLogger.Println("INSTALLED_APPS:")
 		var appNames []string
 		for appName := range INSTALLED_APPS {
@@ -161,7 +169,7 @@ func setupMiddleware(app *fiber.App) {
 	app.Use(logger.New(logger.Config{
 		Format:     "${time} ${status} - ${method} ${path}\n",
 		TimeFormat: "2006-01-02 15:04:05",
-		TimeZone:   config.AppSettings.TimeZone,
+		TimeZone:   app_name.AppSettings.TimeZone,
 	}))
 
 	// Use custom CORS middleware
@@ -184,9 +192,9 @@ func setupDevelopmentServer() {
 	reverb.SetupWebSocket(app)
 	setupRoutes(app)
 
-	wsPort := config.AppSettings.WebSocket.Port
+	wsPort := app_name.AppSettings.WebSocket.Port
 
-	if config.AppSettings.Debug {
+	if app_name.AppSettings.Debug {
 		appLogger.Printf("Development server started on http://127.0.0.1:%s", wsPort)
 	}
 
@@ -204,20 +212,28 @@ func setupProductionServer() {
 		IdleTimeout:  120 * time.Second,
 	})
 
-	setupMiddleware(app) // Removed the second argument
+	setupMiddleware(app)
 	reverb.SetupWebSocket(app)
 	setupRoutes(app)
 
-	wsPort := config.AppSettings.WebSocket.Port
-	certFile := config.AppSettings.CertFile
-	keyFile := config.AppSettings.KeyFile
+	wsPort := app_name.AppSettings.WebSocket.Port
+	certFile := app_name.AppSettings.CertFile
+	keyFile := app_name.AppSettings.KeyFile
 
-	if config.AppSettings.Debug {
-		appLogger.Printf("Allowed origins: %s", config.AppSettings.AllowedOrigins)
+	// Check for wildcard in AllowedOrigins
+	for _, origin := range app_name.AppSettings.AllowedOrigins {
+		if origin == "*" {
+			appLogger.Println(constants.ColorRed + "WARNING: Using wildcard '*' in AllowedOrigins in production is not recommended!" + constants.ColorReset)
+			break
+		}
+	}
+
+	if app_name.AppSettings.Debug {
+		appLogger.Printf("Allowed origins: %v", app_name.AppSettings.AllowedOrigins)
 	}
 
 	if certFile != "" && keyFile != "" {
-		if config.AppSettings.Debug {
+		if app_name.AppSettings.Debug {
 			appLogger.Printf("Starting HTTPS server on port %s", wsPort)
 		}
 		err := app.ListenTLS(":"+wsPort, certFile, keyFile)
@@ -225,7 +241,7 @@ func setupProductionServer() {
 			appLogger.Fatalf("Failed to start HTTPS server: %v", err)
 		}
 	} else {
-		if config.AppSettings.Debug {
+		if app_name.AppSettings.Debug {
 			appLogger.Printf("Starting HTTP server on port %s", wsPort)
 		}
 		err := app.Listen(":" + wsPort)

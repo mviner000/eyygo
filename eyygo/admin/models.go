@@ -1,4 +1,3 @@
-// admin/models.go
 package admin
 
 import (
@@ -6,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/mviner000/eyymi/app_name"
 	"github.com/mviner000/eyymi/config"
 	"github.com/mviner000/eyymi/eyygo/fields"
 	"github.com/mviner000/eyymi/eyygo/operations"
@@ -34,9 +34,12 @@ type User struct {
 	Email    string
 }
 
-// GetAllUsers returns a mock list of users
+// GetAllUsers returns a list of users from the database
 func GetAllUsers() []User {
-	db, err := sql.Open("sqlite3", config.GetDatabaseURL())
+	// Use the app_name.AppSettings to get the database URL
+	dbURL := config.GetDatabaseURL(&app_name.AppSettings)
+
+	db, err := sql.Open("sqlite3", dbURL)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}

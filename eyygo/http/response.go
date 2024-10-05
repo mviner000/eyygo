@@ -37,7 +37,7 @@ func (r *Response) Render(c *fiber.Ctx) error {
 	}
 	if r.Template != "" {
 		// Dynamically resolve the template path using AppSettings
-		templatePath := app_name.Settings.TemplateBasePath + r.Template
+		templatePath := app_name.AppSettings.TemplateBasePath + r.Template
 
 		// Log the template path for debugging
 		fmt.Println("Rendering template at path:", templatePath)

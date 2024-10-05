@@ -1,5 +1,16 @@
 package config
 
+type Debuggable interface {
+	IsDebug() bool
+}
+
+type Config interface {
+	GetDatabaseConfig() DatabaseConfig
+	SetDatabaseConfig(DatabaseConfig)
+	IsDebug() bool
+	SetDebug(bool)
+}
+
 // DatabaseConfig defines the structure for database settings
 type DatabaseConfig struct {
 	Engine   string

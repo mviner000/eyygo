@@ -1,4 +1,3 @@
-// cmd/makemigrations.go
 package cmd
 
 import (
@@ -6,6 +5,7 @@ import (
 	"fmt"
 
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/mviner000/eyymi/app_name"
 	"github.com/mviner000/eyymi/config"
 	"github.com/mviner000/eyymi/eyygo/admin"
 	"github.com/mviner000/eyymi/eyygo/migrations"
@@ -22,7 +22,10 @@ var MakeMigrationsCmd = &cobra.Command{
 }
 
 func makeMigrations() {
-	db, err := sql.Open("sqlite3", config.GetDatabaseURL())
+	// Use the app_name.AppSettings to get the database URL
+	dbURL := config.GetDatabaseURL(&app_name.AppSettings)
+
+	db, err := sql.Open("sqlite3", dbURL)
 	if err != nil {
 		fmt.Printf("Failed to connect to database: %v\n", err)
 		return

@@ -1,10 +1,10 @@
-// admin/views.go
 package admin
 
 import (
 	"database/sql"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/mviner000/eyymi/app_name"
 	"github.com/mviner000/eyymi/config"
 	"github.com/mviner000/eyymi/eyygo/http"
 )
@@ -30,8 +30,11 @@ func (u *UserView) Store(c *fiber.Ctx) error {
 	username := c.FormValue("username")
 	email := c.FormValue("email")
 
+	// Use the app_name.AppSettings to get the database URL
+	dbURL := config.GetDatabaseURL(&app_name.AppSettings)
+
 	// Open the database connection
-	db, err := sql.Open("sqlite3", config.GetDatabaseURL())
+	db, err := sql.Open("sqlite3", dbURL)
 	if err != nil {
 		return http.HttpResponseServerError(err.Error(), nil).Render(c)
 	}

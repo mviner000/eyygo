@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/mviner000/eyymi/app_name"
 	"github.com/mviner000/eyymi/config"
 )
 
@@ -26,13 +27,13 @@ type CSRFConfig struct {
 }
 
 // DefaultCSRFConfig returns the default CSRF configuration
-func DefaultCSRFConfig() CSRFConfig {
+func DefaultCSRFConfig(cfg config.Config) CSRFConfig {
 	return CSRFConfig{
 		TokenLength:   32,
 		CookieName:    "csrf_token",
 		HeaderName:    "X-CSRF-Token",
 		Expiration:    1 * time.Hour,
-		SecureCookie:  !config.IsDevelopment(),
+		SecureCookie:  !cfg.IsDebug(), // Use the IsDebug method to determine if it's a development environment
 		ExemptMethods: []string{"GET", "HEAD", "OPTIONS"},
 	}
 }
@@ -48,25 +49,25 @@ func generateToken(length int) (string, error) {
 }
 
 // CSRFMiddleware provides CSRF protection
-func CSRFMiddleware(cfg ...CSRFConfig) fiber.Handler {
+func CSRFMiddleware(cfg config.Config, customCfg ...CSRFConfig) fiber.Handler {
 	// Use default config
-	config := DefaultCSRFConfig()
-	if len(cfg) > 0 {
-		config = cfg[0]
+	csrfConfig := DefaultCSRFConfig(cfg)
+	if len(customCfg) > 0 {
+		csrfConfig = customCfg[0]
 	}
 
 	return func(c *fiber.Ctx) error {
 		// Check if the method is exempt
-		for _, method := range config.ExemptMethods {
+		for _, method := range csrfConfig.ExemptMethods {
 			if c.Method() == method {
 				return c.Next()
 			}
 		}
 
 		// Get the token from the request
-		token := c.Cookies(config.CookieName)
+		token := c.Cookies(csrfConfig.CookieName)
 		if token == "" {
-			token = c.Get(config.HeaderName)
+			token = c.Get(csrfConfig.HeaderName)
 		}
 
 		csrfTokenMutex.RLock()
@@ -76,7 +77,7 @@ func CSRFMiddleware(cfg ...CSRFConfig) fiber.Handler {
 		// If token doesn't exist or has expired, generate a new one
 		if !exists || time.Now().After(tokenTime) {
 			var err error
-			token, err = generateToken(config.TokenLength)
+			token, err = generateToken(csrfConfig.TokenLength)
 			if err != nil {
 				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 					"error": "Failed to generate CSRF token",
@@ -84,14 +85,14 @@ func CSRFMiddleware(cfg ...CSRFConfig) fiber.Handler {
 			}
 
 			csrfTokenMutex.Lock()
-			csrfTokens[token] = time.Now().Add(config.Expiration)
+			csrfTokens[token] = time.Now().Add(csrfConfig.Expiration)
 			csrfTokenMutex.Unlock()
 
 			c.Cookie(&fiber.Cookie{
-				Name:     config.CookieName,
+				Name:     csrfConfig.CookieName,
 				Value:    token,
-				Expires:  time.Now().Add(config.Expiration),
-				Secure:   config.SecureCookie,
+				Expires:  time.Now().Add(csrfConfig.Expiration),
+				Secure:   csrfConfig.SecureCookie,
 				HTTPOnly: true,
 				SameSite: "Strict",
 			})
@@ -99,7 +100,7 @@ func CSRFMiddleware(cfg ...CSRFConfig) fiber.Handler {
 
 		// For non-GET requests, validate the token
 		if c.Method() != "GET" {
-			requestToken := c.Get(config.HeaderName)
+			requestToken := c.Get(csrfConfig.HeaderName)
 			if requestToken == "" || requestToken != token {
 				return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 					"error": "Invalid CSRF token",
@@ -108,7 +109,7 @@ func CSRFMiddleware(cfg ...CSRFConfig) fiber.Handler {
 		}
 
 		// Set the token in the response headers
-		c.Set(config.HeaderName, token)
+		c.Set(csrfConfig.HeaderName, token)
 
 		return c.Next()
 	}
@@ -116,7 +117,7 @@ func CSRFMiddleware(cfg ...CSRFConfig) fiber.Handler {
 
 // CSRFToken returns the current CSRF token
 func CSRFToken(c *fiber.Ctx) string {
-	return c.Get(DefaultCSRFConfig().HeaderName)
+	return c.Get(DefaultCSRFConfig(&app_name.AppSettings).HeaderName) // Use a pointer to AppSettings
 }
 
 // CleanupCSRFTokens removes expired tokens
