@@ -6,6 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/mviner000/eyymi/eyygo/admin"
+	"github.com/mviner000/eyymi/eyygo/constants"
 	"github.com/mviner000/eyymi/eyygo/monitor"
 	"github.com/mviner000/eyymi/project_name"
 )
@@ -52,22 +53,13 @@ func setupAppRoutes(app *fiber.App, appName string) {
 	}
 }
 
-func setupRoutes(app *fiber.App) {
+func SetupRoutes(app *fiber.App) {
 	if project_name.AppSettings.Debug {
-		appLogger.Println("INSTALLED_APPS:")
 		var appNames []string
 		for appName := range INSTALLED_APPS {
 			appNames = append(appNames, appName)
 		}
 		sort.Strings(appNames)
-
-		for _, appName := range appNames {
-			status := "Disabled"
-			if INSTALLED_APPS[appName] {
-				status = "Enabled"
-			}
-			appLogger.Printf("  - %s: %s", appName, status)
-		}
 	}
 
 	// Monitoring endpoints
@@ -84,14 +76,58 @@ func setupRoutes(app *fiber.App) {
 	}
 
 	// Log all available routes
-	logAvailableRoutes(app)
+	LogAvailableRoutes(app)
 }
 
-func logAvailableRoutes(app *fiber.App) {
+func LogAvailableRoutes(app *fiber.App) {
+	methodColors := map[string]string{
+		"GET":     constants.ColorBoldGreen,
+		"POST":    constants.ColorBoldOrange,
+		"HEAD":    constants.ColorCyan,
+		"PUT":     constants.ColorBoldYellow,
+		"DELETE":  constants.ColorRed,
+		"CONNECT": constants.ColorPurple,
+		"OPTIONS": constants.ColorWhite,
+		"TRACE":   constants.ColorReset,
+		"PATCH":   constants.ColorBoldGreen,
+	}
+
 	routes := app.Stack()
 	for _, route := range routes {
 		for _, r := range route {
-			appLogger.Printf("Method: %s, Path: %s", r.Method, r.Path)
+			color, exists := methodColors[r.Method]
+			if !exists {
+				color = constants.ColorReset
+			}
+			appLogger.Printf("%sMethod: %s, Path: %s%s", color, r.Method, r.Path, constants.ColorReset)
+		}
+	}
+}
+
+func LogAppRoutes(app *fiber.App, appName string) {
+	methodColors := map[string]string{
+		"GET":     constants.ColorBoldGreen,
+		"POST":    constants.ColorBoldOrange,
+		"HEAD":    constants.ColorCyan,
+		"PUT":     constants.ColorBoldYellow,
+		"DELETE":  constants.ColorRed,
+		"CONNECT": constants.ColorPurple,
+		"OPTIONS": constants.ColorWhite,
+		"TRACE":   constants.ColorReset,
+		"PATCH":   constants.ColorBoldGreen,
+	}
+
+	routes := app.Stack()
+	for _, route := range routes {
+		for _, r := range route {
+			// Assuming route names are set to app names
+			if r.Name == appName {
+				color, exists := methodColors[r.Method]
+				if !exists {
+					color = constants.ColorReset
+				}
+				appLogger.Printf("%sMethod: %s, Path: %s%s", color, r.Method, r.Path, constants.ColorReset)
+			}
 		}
 	}
 }

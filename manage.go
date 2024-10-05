@@ -28,6 +28,7 @@ func init() {
 	rootCmd.AddCommand(cmd.StartAppCmd)
 	rootCmd.AddCommand(cmd.MakeMigrationsCmd)
 	rootCmd.AddCommand(cmd.MigrateCmd)
+	rootCmd.AddCommand(cmd.ShowRoutesCmd)
 	// Add more commands as needed
 }
 

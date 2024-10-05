@@ -81,7 +81,7 @@ func NewApp() *fiber.App {
 	})
 
 	setupMiddleware(app)
-	setupRoutes(app)
+	SetupRoutes(app)
 
 	// Set up WebSocket route
 	app.Get("/ws", websocket.New(func(c *websocket.Conn) {
@@ -162,7 +162,7 @@ func setupDevelopmentServer() {
 
 		setupMiddleware(app)
 		reverb.SetupWebSocket(app)
-		setupRoutes(app)
+		SetupRoutes(app)
 
 		if project_name.AppSettings.Debug {
 			appLogger.Printf("Development server started on http://127.0.0.1:%s", httpPort)
@@ -183,7 +183,7 @@ func setupDevelopmentServer() {
 
 		setupMiddleware(app)
 		reverb.SetupWebSocket(app)
-		setupRoutes(app)
+		SetupRoutes(app)
 
 		if project_name.AppSettings.Debug {
 			appLogger.Printf("WebSocket server started on ws://127.0.0.1:%s", wsPort)
@@ -222,7 +222,7 @@ func setupProductionServer() {
 
 		setupMiddleware(app)
 		reverb.SetupWebSocket(app)
-		setupRoutes(app)
+		SetupRoutes(app)
 
 		certFile := project_name.AppSettings.CertFile
 		keyFile := project_name.AppSettings.KeyFile
@@ -269,7 +269,7 @@ func setupProductionServer() {
 
 		setupMiddleware(app)
 		reverb.SetupWebSocket(app)
-		setupRoutes(app)
+		SetupRoutes(app)
 
 		certFile := project_name.AppSettings.CertFile
 		keyFile := project_name.AppSettings.KeyFile
