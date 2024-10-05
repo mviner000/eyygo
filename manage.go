@@ -6,7 +6,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/mviner000/eyymi/config"
-	"github.com/mviner000/eyymi/eyygo/cmd"
+	"github.com/mviner000/eyymi/eyygo/cmdlib"
 	"github.com/mviner000/eyymi/project_name"
 	"github.com/spf13/cobra"
 )
@@ -24,12 +24,16 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(cmd.ServerCmd)
-	rootCmd.AddCommand(cmd.StartAppCmd)
-	rootCmd.AddCommand(cmd.MakeMigrationsCmd)
-	rootCmd.AddCommand(cmd.MigrateCmd)
-	rootCmd.AddCommand(cmd.ShowRoutesCmd)
-	// Add more commands as needed
+	// Register internal commands
+	cmdlib.RegisterInternalCommands(rootCmd)
+
+	// Add custom commands here
+	// Example:
+	// rootCmd.AddCommand(customCmd)
+
+	// Note for developers:
+	// To add a new custom command, define your command using the cobra.Command struct.
+	// Add your command here using rootCmd.AddCommand(yourCommand).
 }
 
 func main() {

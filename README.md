@@ -1,4 +1,4 @@
-# eyymi
+# eyygo
 
 To install dependencies:
 
@@ -10,15 +10,25 @@ BUILD FILES
 go build
 ```
 then
-MIGRATE
+RUNSERVER
 
 ```bash
 go run manage.go runserver
 ```
 
-RUNSERVER
+MIGRATE
 ```bash
 go run manage.go migrate
+```
+
+MIGRATE
+```bash
+go run manage.go show_routes
+```
+
+EXTENDABLE PLUS INSTALLED_APP_NAME
+```bash
+go run manage.go show_routes app_name
 ```
 
 START NEW APP
@@ -26,6 +36,7 @@ START NEW APP
 go run manage.go startapp
 ```
 
+TODO
 START SERVER by BUN
 
 ```bash

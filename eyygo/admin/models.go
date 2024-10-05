@@ -29,11 +29,6 @@ func GetModels() []*operations.Model {
 	return []*operations.Model{userModel}
 }
 
-type User struct {
-	Username string
-	Email    string
-}
-
 // GetAllUsers returns a list of users from the database
 func GetAllUsers() []User {
 	// Use the project_name.AppSettings to get the database URL
