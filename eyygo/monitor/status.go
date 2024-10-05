@@ -57,16 +57,16 @@ func HandleStatus(c *fiber.Ctx) error {
 		RAMUsage         float64
 		StorageUsage     float64
 	}{
-		Time:             time.Now().Format(time.RFC1123),
-		Uptime:           time.Since(StartTime).Round(time.Second).String(),
-		CPUUsage:         metrics.CPUUsage,
-		RAMUsage:         metrics.RAMUsage,
-		StorageUsage:     metrics.StorageUsage,
+		Time:         time.Now().Format(time.RFC1123),
+		Uptime:       time.Since(StartTime).Round(time.Second).String(),
+		CPUUsage:     metrics.CPUUsage,
+		RAMUsage:     metrics.RAMUsage,
+		StorageUsage: metrics.StorageUsage,
 	}
 
 	switch c.Path() {
 	case "/status/server-info":
-		return c.Render("monitor/views/status_partial", status)
+		return c.Render("eyygo/monitor/views/status_partial", status)
 	case "/status/cpu":
 		return c.SendString(fmt.Sprintf("%.2f", metrics.CPUUsage))
 	case "/status/ram":
@@ -74,10 +74,10 @@ func HandleStatus(c *fiber.Ctx) error {
 	case "/status/storage":
 		return c.SendString(fmt.Sprintf("%.2f", metrics.StorageUsage))
 	case "/status/old":
-		return c.Render("monitor/views/status_partial", status)
+		return c.Render("eyygo/monitor/views/status_partial", status)
 	case "/status/room-console":
-		return c.Render("monitor/views/room_console", status)
+		return c.Render("eyygo/monitor/views/room_console", status)
 	default:
-		return c.Render("monitor/views/status", status)
+		return c.Render("eyygo/monitor/views/status", status)
 	}
 }

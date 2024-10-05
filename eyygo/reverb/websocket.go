@@ -7,6 +7,8 @@ import (
 
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
+
+	"github.com/mviner000/eyymi/project_name"
 )
 
 var (
@@ -47,7 +49,10 @@ func SetupWebSocket(app *fiber.App) {
 
 	app.Get("/ws", websocket.New(handleWebSocket))
 
-	logger.Printf("WebSocket server configured on port %d", wsPortInt)
+	// Log WebSocket configuration if DEBUG is true
+	if project_name.AppSettings.Debug {
+		logger.Printf("WebSocket server configured on port %d", wsPortInt)
+	}
 }
 
 func handleWebSocket(c *websocket.Conn) {

@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/mviner000/eyymi/app_name"
 	"github.com/mviner000/eyymi/config"
 	"github.com/mviner000/eyymi/eyygo/fields"
 	"github.com/mviner000/eyymi/eyygo/operations"
+	"github.com/mviner000/eyymi/project_name"
 )
 
 // GetModels defines and returns all the models for the application.
@@ -36,8 +36,8 @@ type User struct {
 
 // GetAllUsers returns a list of users from the database
 func GetAllUsers() []User {
-	// Use the app_name.AppSettings to get the database URL
-	dbURL := config.GetDatabaseURL(&app_name.AppSettings)
+	// Use the project_name.AppSettings to get the database URL
+	dbURL := config.GetDatabaseURL(&project_name.AppSettings)
 
 	db, err := sql.Open("sqlite3", dbURL)
 	if err != nil {

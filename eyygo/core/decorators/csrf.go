@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/mviner000/eyymi/app_name"
 	"github.com/mviner000/eyymi/config"
+	"github.com/mviner000/eyymi/project_name"
 )
 
 var (
@@ -117,7 +117,7 @@ func CSRFMiddleware(cfg config.Config, customCfg ...CSRFConfig) fiber.Handler {
 
 // CSRFToken returns the current CSRF token
 func CSRFToken(c *fiber.Ctx) string {
-	return c.Get(DefaultCSRFConfig(&app_name.AppSettings).HeaderName) // Use a pointer to AppSettings
+	return c.Get(DefaultCSRFConfig(&project_name.AppSettings).HeaderName) // Use a pointer to AppSettings
 }
 
 // CleanupCSRFTokens removes expired tokens

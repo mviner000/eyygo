@@ -5,7 +5,7 @@ import (
 	"regexp"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/mviner000/eyymi/app_name"
+	"github.com/mviner000/eyymi/project_name"
 )
 
 var sensitiveParamsRegex = regexp.MustCompile(`(?i)(pass|secret|token|key|api|pw|password)`)
@@ -13,7 +13,7 @@ var sensitiveParamsRegex = regexp.MustCompile(`(?i)(pass|secret|token|key|api|pw
 // SensitivePostParameters masks sensitive POST parameters in error reports
 func SensitivePostParameters() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		if app_name.AppSettings.Debug {
+		if project_name.AppSettings.Debug {
 			originalBody := c.Body()
 			maskedBody := sensitiveParamsRegex.ReplaceAllString(string(originalBody), "***")
 			c.Request().SetBody([]byte(maskedBody))
@@ -30,7 +30,7 @@ func SensitivePostParameters() fiber.Handler {
 // DebugLogger logs debug information for each request
 func DebugLogger() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		if app_name.AppSettings.Debug {
+		if project_name.AppSettings.Debug {
 			log.Printf("DEBUG: %s %s", c.Method(), c.Path())
 		}
 		return c.Next()

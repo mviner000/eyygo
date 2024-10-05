@@ -1,23 +1,21 @@
 package core
 
 import (
-	"fmt"
 	"log"
 	"os"
-	"sort"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/template/html/v2"
-	"github.com/mviner000/eyymi/app_name"
+	"github.com/gofiber/websocket/v2"
+
 	"github.com/mviner000/eyymi/config"
-	"github.com/mviner000/eyymi/eyygo/admin"
 	"github.com/mviner000/eyymi/eyygo/constants"
 	"github.com/mviner000/eyymi/eyygo/core/decorators"
-	"github.com/mviner000/eyymi/eyygo/monitor"
 	"github.com/mviner000/eyymi/eyygo/reverb"
+	"github.com/mviner000/eyymi/project_name"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -38,23 +36,25 @@ func init() {
 	}
 
 	// Set the default time zone
-	loc, err := time.LoadLocation(app_name.AppSettings.TimeZone)
+	loc, err := time.LoadLocation(project_name.AppSettings.TimeZone)
 	if err != nil {
 		appLogger.Fatalf("Invalid time zone: %v", err)
 	}
 	time.Local = loc
 
-	// Add this debug logging
-	config.DebugLogf("Time zone set to: %s", app_name.AppSettings.TimeZone)
+	// Log the time zone if DEBUG is true
+	if project_name.AppSettings.Debug {
+		config.DebugLogf("Time zone set to: %s", project_name.AppSettings.TimeZone)
+	}
 
-	db, err = gorm.Open(sqlite.Open(app_name.AppSettings.Database.Name), &gorm.Config{})
+	db, err = gorm.Open(sqlite.Open(project_name.AppSettings.Database.Name), &gorm.Config{})
 	if err != nil {
 		appLogger.Fatalf("Failed to connect to database: %v", err)
 	}
 }
 
 func ReloadSettings() {
-	app_name.LoadSettings() // Reload settings using the function from app_name
+	project_name.LoadSettings() // Reload settings using the function from project_name
 	log.Println("Settings reloaded")
 }
 
@@ -73,76 +73,35 @@ func RunCommand() {
 	}
 }
 
-var exampleapp App = nil
+// NewApp initializes and returns a new Fiber application
+func NewApp() *fiber.App {
+	app := fiber.New(fiber.Config{
+		Views:       html.New("./", ".html"),
+		ReadTimeout: 5 * time.Second,
+	})
 
-// Mocked INSTALLED_APPS-like structure
-var INSTALLED_APPS = map[string]bool{
-	"exampleapp": true,  // This app is enabled
-	"otherapp":   false, // This app is disabled and won't be set up
-	// Add more apps as needed
-}
+	setupMiddleware(app)
+	setupRoutes(app)
 
-func getAppPackage(appName string) (App, error) {
-	switch appName {
-	case "exampleapp":
-		if exampleapp != nil {
-			return exampleapp, nil
-		}
-		return nil, fmt.Errorf("exampleapp is not available")
-	default:
-		return nil, fmt.Errorf("unknown app: %s", appName)
-	}
-}
-
-func setupAppRoutes(app *fiber.App, appName string) {
-	appPackage, err := getAppPackage(appName)
-	if err != nil {
-		if app_name.AppSettings.Debug {
-			appLogger.Printf("Error setting up app: %v", err)
-		}
-		return
-	}
-
-	if appPackage != nil {
-		appPackage.SetupRoutes(app)
-		if app_name.AppSettings.Debug {
-			appLogger.Printf("Routes set up for app: %s", appName)
-		}
-	} else if app_name.AppSettings.Debug {
-		appLogger.Printf("Failed to set up routes for app: %s", appName)
-	}
-}
-
-func setupRoutes(app *fiber.App) {
-	if app_name.AppSettings.Debug {
-		appLogger.Println("INSTALLED_APPS:")
-		var appNames []string
-		for appName := range INSTALLED_APPS {
-			appNames = append(appNames, appName)
-		}
-		sort.Strings(appNames)
-
-		for _, appName := range appNames {
-			status := "Disabled"
-			if INSTALLED_APPS[appName] {
-				status = "Enabled"
+	// Set up WebSocket route
+	app.Get("/ws", websocket.New(func(c *websocket.Conn) {
+		defer c.Close()
+		for {
+			mt, msg, err := c.ReadMessage()
+			if err != nil {
+				break
 			}
-			appLogger.Printf("  - %s: %s", appName, status)
+			err = c.WriteMessage(mt, msg)
+			if err != nil {
+				break
+			}
 		}
-	}
+	}))
 
-	// Monitoring endpoints
-	monitor.SetupRoutes(app)
+	// Log that the WebSocket route is set up
+	log.Println(constants.ColorYellow + "WebSocket route set up at /ws" + constants.ColorReset)
 
-	// Admin routes
-	admin.SetupRoutes(app)
-
-	// Set up routes for installed apps
-	for appName, isEnabled := range INSTALLED_APPS {
-		if isEnabled {
-			setupAppRoutes(app, appName)
-		}
-	}
+	return app
 }
 
 func customCORS() fiber.Handler {
@@ -169,7 +128,7 @@ func setupMiddleware(app *fiber.App) {
 	app.Use(logger.New(logger.Config{
 		Format:     "${time} ${status} - ${method} ${path}\n",
 		TimeFormat: "2006-01-02 15:04:05",
-		TimeZone:   app_name.AppSettings.TimeZone,
+		TimeZone:   project_name.AppSettings.TimeZone,
 	}))
 
 	// Use custom CORS middleware
@@ -183,70 +142,169 @@ func setupMiddleware(app *fiber.App) {
 }
 
 func setupDevelopmentServer() {
-	app := fiber.New(fiber.Config{
-		Views:       html.New("./", ".html"),
-		ReadTimeout: 5 * time.Second,
-	})
+	httpPort := os.Getenv("HTTP_PORT")
+	wsPort := os.Getenv("WS_PORT")
 
-	setupMiddleware(app) // Removed the second argument
-	reverb.SetupWebSocket(app)
-	setupRoutes(app)
-
-	wsPort := app_name.AppSettings.WebSocket.Port
-
-	if app_name.AppSettings.Debug {
-		appLogger.Printf("Development server started on http://127.0.0.1:%s", wsPort)
+	if httpPort == "" {
+		httpPort = "8000"
 	}
 
-	err := app.Listen(":" + wsPort)
-	if err != nil {
-		appLogger.Fatalf("Failed to start development server: %v", err)
+	if wsPort == "" {
+		wsPort = "3333"
 	}
+
+	// Set up HTTP server
+	go func() {
+		app := fiber.New(fiber.Config{
+			Views:       html.New("./", ".html"),
+			ReadTimeout: 5 * time.Second,
+		})
+
+		setupMiddleware(app)
+		reverb.SetupWebSocket(app)
+		setupRoutes(app)
+
+		if project_name.AppSettings.Debug {
+			appLogger.Printf("Development server started on http://127.0.0.1:%s", httpPort)
+		}
+
+		err := app.Listen(":" + httpPort)
+		if err != nil {
+			appLogger.Fatalf("Failed to start development server: %v", err)
+		}
+	}()
+
+	// Set up WebSocket server
+	go func() {
+		app := fiber.New(fiber.Config{
+			Views:       html.New("./", ".html"),
+			ReadTimeout: 5 * time.Second,
+		})
+
+		setupMiddleware(app)
+		reverb.SetupWebSocket(app)
+		setupRoutes(app)
+
+		if project_name.AppSettings.Debug {
+			appLogger.Printf("WebSocket server started on ws://127.0.0.1:%s", wsPort)
+		}
+
+		err := app.Listen(":" + wsPort)
+		if err != nil {
+			appLogger.Fatalf("Failed to start WebSocket server: %v", err)
+		}
+	}()
+
+	// Block forever
+	select {}
 }
 
 func setupProductionServer() {
-	app := fiber.New(fiber.Config{
-		Views:        html.New("./", ".html"),
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  120 * time.Second,
-	})
+	httpPort := os.Getenv("HTTP_PORT")
+	wsPort := os.Getenv("WS_PORT")
 
-	setupMiddleware(app)
-	reverb.SetupWebSocket(app)
-	setupRoutes(app)
-
-	wsPort := app_name.AppSettings.WebSocket.Port
-	certFile := app_name.AppSettings.CertFile
-	keyFile := app_name.AppSettings.KeyFile
-
-	// Check for wildcard in AllowedOrigins
-	for _, origin := range app_name.AppSettings.AllowedOrigins {
-		if origin == "*" {
-			appLogger.Println(constants.ColorRed + "WARNING: Using wildcard '*' in AllowedOrigins in production is not recommended!" + constants.ColorReset)
-			break
-		}
+	if httpPort == "" {
+		httpPort = "8000"
 	}
 
-	if app_name.AppSettings.Debug {
-		appLogger.Printf("Allowed origins: %v", app_name.AppSettings.AllowedOrigins)
+	if wsPort == "" {
+		wsPort = "3333"
 	}
 
-	if certFile != "" && keyFile != "" {
-		if app_name.AppSettings.Debug {
-			appLogger.Printf("Starting HTTPS server on port %s", wsPort)
+	// Set up HTTP server
+	go func() {
+		app := fiber.New(fiber.Config{
+			Views:        html.New("./", ".html"),
+			ReadTimeout:  5 * time.Second,
+			WriteTimeout: 10 * time.Second,
+			IdleTimeout:  120 * time.Second,
+		})
+
+		setupMiddleware(app)
+		reverb.SetupWebSocket(app)
+		setupRoutes(app)
+
+		certFile := project_name.AppSettings.CertFile
+		keyFile := project_name.AppSettings.KeyFile
+
+		// Check for wildcard in AllowedOrigins
+		for _, origin := range project_name.AppSettings.AllowedOrigins {
+			if origin == "*" {
+				appLogger.Println(constants.ColorRed + "WARNING: Using wildcard '*' in AllowedOrigins in production is not recommended!" + constants.ColorReset)
+				break
+			}
 		}
-		err := app.ListenTLS(":"+wsPort, certFile, keyFile)
-		if err != nil {
-			appLogger.Fatalf("Failed to start HTTPS server: %v", err)
+
+		if project_name.AppSettings.Debug {
+			appLogger.Printf("Allowed origins: %v", project_name.AppSettings.AllowedOrigins)
 		}
-	} else {
-		if app_name.AppSettings.Debug {
-			appLogger.Printf("Starting HTTP server on port %s", wsPort)
+
+		if certFile != "" && keyFile != "" {
+			if project_name.AppSettings.Debug {
+				appLogger.Printf("Starting HTTPS server on port %s", httpPort)
+			}
+			err := app.ListenTLS(":"+httpPort, certFile, keyFile)
+			if err != nil {
+				appLogger.Fatalf("Failed to start HTTPS server: %v", err)
+			}
+		} else {
+			if project_name.AppSettings.Debug {
+				appLogger.Printf("Starting HTTP server on port %s", httpPort)
+			}
+			err := app.Listen(":" + httpPort)
+			if err != nil {
+				appLogger.Fatalf("Failed to start HTTP server: %v", err)
+			}
 		}
-		err := app.Listen(":" + wsPort)
-		if err != nil {
-			appLogger.Fatalf("Failed to start HTTP server: %v", err)
+	}()
+
+	// Set up WebSocket server
+	go func() {
+		app := fiber.New(fiber.Config{
+			Views:        html.New("./", ".html"),
+			ReadTimeout:  5 * time.Second,
+			WriteTimeout: 10 * time.Second,
+			IdleTimeout:  120 * time.Second,
+		})
+
+		setupMiddleware(app)
+		reverb.SetupWebSocket(app)
+		setupRoutes(app)
+
+		certFile := project_name.AppSettings.CertFile
+		keyFile := project_name.AppSettings.KeyFile
+
+		// Check for wildcard in AllowedOrigins
+		for _, origin := range project_name.AppSettings.AllowedOrigins {
+			if origin == "*" {
+				appLogger.Println(constants.ColorRed + "WARNING: Using wildcard '*' in AllowedOrigins in production is not recommended!" + constants.ColorReset)
+				break
+			}
 		}
-	}
+
+		if project_name.AppSettings.Debug {
+			appLogger.Printf("Allowed origins: %v", project_name.AppSettings.AllowedOrigins)
+		}
+
+		if certFile != "" && keyFile != "" {
+			if project_name.AppSettings.Debug {
+				appLogger.Printf("Starting HTTPS WebSocket server on port %s", wsPort)
+			}
+			err := app.ListenTLS(":"+wsPort, certFile, keyFile)
+			if err != nil {
+				appLogger.Fatalf("Failed to start HTTPS WebSocket server: %v", err)
+			}
+		} else {
+			if project_name.AppSettings.Debug {
+				appLogger.Printf("Starting HTTP WebSocket server on port %s", wsPort)
+			}
+			err := app.Listen(":" + wsPort)
+			if err != nil {
+				appLogger.Fatalf("Failed to start HTTP WebSocket server: %v", err)
+			}
+		}
+	}()
+
+	// Block forever
+	select {}
 }

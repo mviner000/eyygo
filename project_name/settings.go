@@ -1,4 +1,4 @@
-package app_name
+package project_name
 
 import (
 	"os"

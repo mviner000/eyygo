@@ -5,9 +5,9 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
-	"github.com/mviner000/eyymi/app_name"
 	"github.com/mviner000/eyymi/config"
 	"github.com/mviner000/eyymi/eyygo/cmd"
+	"github.com/mviner000/eyymi/project_name"
 	"github.com/spf13/cobra"
 )
 
@@ -19,7 +19,7 @@ var rootCmd = &cobra.Command{
 		if err := godotenv.Load(); err != nil {
 			fmt.Println("No .env file found")
 		}
-		config.InitConfig(&app_name.AppSettings)
+		config.InitConfig(&project_name.AppSettings)
 	},
 }
 

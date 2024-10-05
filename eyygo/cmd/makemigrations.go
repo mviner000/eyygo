@@ -5,11 +5,11 @@ import (
 	"fmt"
 
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/mviner000/eyymi/app_name"
 	"github.com/mviner000/eyymi/config"
 	"github.com/mviner000/eyymi/eyygo/admin"
 	"github.com/mviner000/eyymi/eyygo/migrations"
 	"github.com/mviner000/eyymi/eyygo/operations"
+	"github.com/mviner000/eyymi/project_name"
 	"github.com/spf13/cobra"
 )
 
@@ -22,8 +22,8 @@ var MakeMigrationsCmd = &cobra.Command{
 }
 
 func makeMigrations() {
-	// Use the app_name.AppSettings to get the database URL
-	dbURL := config.GetDatabaseURL(&app_name.AppSettings)
+	// Use the project_name.AppSettings to get the database URL
+	dbURL := config.GetDatabaseURL(&project_name.AppSettings)
 
 	db, err := sql.Open("sqlite3", dbURL)
 	if err != nil {

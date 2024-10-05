@@ -1,20 +1,20 @@
 {
-  "environment": "development",
-  "webSocketPort": "3000",
-  "allowedOrigins": "https://google.site",
-  "certFile": "",
-  "keyFile": "",
-  "logFile": "server.log",
-  "isDevelopment": false,
-  "debug": true,
-  "timeZone": "Asia/Singapore",
-  "database": {
-    "engine": "sqlite3",
-    "name": "db.sqlite3",
-    "user": "",
-    "password": "",
-    "host": "",
-    "port": "",
-    "options": {}
+    "environment": "development",
+    "webSocketPort": "3000",
+    "allowedOrigins": "https://google.site",
+    "certFile": "",
+    "keyFile": "",
+    "logFile": "server.log",
+    "isDevelopment": false,
+    "debug": true,
+    "timeZone": "Asia/Singapore",
+    "database": {
+      "engine": "sqlite3",
+      "name": "db.sqlite3",
+      "user": "",
+      "password": "",
+      "host": "",
+      "port": "",
+      "options": {}
+    }
   }
-}
