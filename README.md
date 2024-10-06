@@ -21,7 +21,7 @@ MIGRATE
 go run manage.go migrate
 ```
 
-MIGRATE
+SHOW ROUTES
 ```bash
 go run manage.go show_routes
 ```

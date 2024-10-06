@@ -166,7 +166,7 @@ func promptPassword(user *User) error {
 
 		hashedPassword, err := config.HashPassword(string(password))
 		if err != nil {
-			return err
+			return fmt.Errorf("error hashing password: %w", err)
 		}
 
 		user.Password = hashedPassword
@@ -175,8 +175,8 @@ func promptPassword(user *User) error {
 }
 
 func saveUser(user *User, db *sql.DB) error {
-	// Remove the second hashing
-	hashedPassword := user.Password // This is already hashed by config.HashPassword
+	// The password is already hashed, so we can use it directly
+	hashedPassword := user.Password
 
 	// Set the current time as the date joined
 	user.DateJoined = time.Now().Format("2006-01-02 15:04:05")

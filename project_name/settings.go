@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/mviner000/eyymi/config"
+	"github.com/mviner000/eyymi/eyygo/shared"
 )
 
 var AppSettings SettingsStruct
@@ -21,12 +22,13 @@ type SettingsStruct struct {
 	CertFile         string
 	KeyFile          string
 	AllowedOrigins   []string
-	TemplateBasePath string // Add this field to store the template base path
-	// Add other fields as needed
+	TemplateBasePath string
+	SecretKey        string
 }
 
 func LoadSettings() {
 	AppSettings = SettingsStruct{
+		SecretKey: os.Getenv("SECRET_KEY"),
 		Database: config.DatabaseConfig{
 			Engine:   os.Getenv("DB_ENGINE"),
 			Name:     os.Getenv("DB_NAME"),
@@ -45,6 +47,9 @@ func LoadSettings() {
 		AllowedOrigins:   strings.Split(os.Getenv("ALLOWED_ORIGINS"), ","),
 		TemplateBasePath: os.Getenv("TEMPLATE_BASE_PATH"),
 	}
+
+	// Set the secret key in the shared config
+	shared.SetSecretKey(os.Getenv("SECRET_KEY"))
 
 	// Log loaded settings
 	config.LogStruct("Loaded settings", AppSettings)

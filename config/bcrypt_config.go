@@ -1,34 +1,39 @@
 package config
 
 import (
+	"encoding/base64"
 	"fmt"
 
+	"github.com/mviner000/eyymi/eyygo/shared" // Import your project's package
 	"golang.org/x/crypto/bcrypt"
 )
 
 const (
 	BcryptCost = 12
-	BcryptKey  = "your-secret-key-here" // Replace with a secure, random string
 )
 
 func HashPassword(password string) (string, error) {
-	fmt.Println("Starting password hashing")
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password+BcryptKey), BcryptCost)
+	secretKey := shared.GetConfig().SecretKey
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password+secretKey), BcryptCost)
 	if err != nil {
-		fmt.Println("Error occurred during password hashing:", err)
-	} else {
-		fmt.Println("Password hashing completed successfully")
+		return "", fmt.Errorf("error hashing password: %w", err)
 	}
-	return string(bytes), err
+	return base64.StdEncoding.EncodeToString(bytes), nil
 }
 
-func CheckPasswordHash(password, hash string) bool {
-	fmt.Println("Starting password hash verification")
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password+BcryptKey))
+func CheckPasswordHash(password, hash string) (bool, error) {
+	secretKey := shared.GetConfig().SecretKey
+	decodedHash, err := base64.StdEncoding.DecodeString(hash)
 	if err != nil {
-		fmt.Println("Password hash verification failed:", err)
-	} else {
-		fmt.Println("Password hash verification succeeded")
+		return false, fmt.Errorf("error decoding hash: %w", err)
 	}
-	return err == nil
+
+	err = bcrypt.CompareHashAndPassword(decodedHash, []byte(password+secretKey))
+	if err == bcrypt.ErrMismatchedHashAndPassword {
+		return false, nil
+	} else if err != nil {
+		return false, fmt.Errorf("error comparing password hash: %w", err)
+	}
+
+	return true, nil
 }
