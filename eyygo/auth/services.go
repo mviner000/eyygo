@@ -121,7 +121,7 @@ func GetAllPermissions() ([]string, error) {
 }
 
 func GetSessionFromDB(c *fiber.Ctx) (int, string, error) {
-	sessionID := c.Cookies("session_id")
+	sessionID := c.Cookies("hey_sesion")
 	if sessionID == "" {
 		return 0, "", fmt.Errorf("session ID not found in cookie")
 	}
@@ -150,4 +150,15 @@ func GetSessionFromDB(c *fiber.Ctx) (int, string, error) {
 	}
 
 	return userID, authToken, nil
+}
+
+func DeleteSessionFromDB(sessionID string) error {
+	query := `DELETE FROM eyygo_session WHERE session_key = ?`
+	_, err := db.Exec(query, sessionID)
+	if err != nil {
+		log.Printf("Error deleting session %s from database: %v", sessionID, err)
+		return err
+	}
+	log.Printf("Session %s deleted successfully from database", sessionID)
+	return nil
 }

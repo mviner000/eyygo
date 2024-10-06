@@ -66,7 +66,7 @@ func getSessionFromDB(c *fiber.Ctx) (string, string, error) {
 	var authToken string
 
 	// Get session ID from cookie
-	sessionID := c.Cookies("session_id")
+	sessionID := c.Cookies("hey_sesion")
 	if sessionID == "" {
 		log.Println("getSessionFromDB: Session ID not found in cookie")
 		return "", "", fmt.Errorf("session ID not found in cookie")

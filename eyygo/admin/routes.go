@@ -29,6 +29,7 @@ func SetupRoutes(app *fiber.App) {
 	adminGroup.Get("/users", logMiddleware("UserIndex"), auth.AuthMiddleware, UserList)
 	adminGroup.Get("/users/create", logMiddleware("UserCreate"), auth.AuthMiddleware, UserCreate)
 	adminGroup.Post("/users", logMiddleware("UserStore"), auth.AuthMiddleware, UserStore)
+	adminGroup.Post("/logout", logMiddleware("Logout"), auth.AuthMiddleware, Logout)
 
 	log.Println("Admin: Finished setting up admin routes")
 }

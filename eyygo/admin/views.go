@@ -130,7 +130,7 @@ func Login(c *fiber.Ctx) error {
 
 	// Set the session cookie
 	c.Cookie(&fiber.Cookie{
-		Name:     "session_id",
+		Name:     "hey_sesion",
 		Value:    sessionID,
 		Expires:  expireTime,
 		HTTPOnly: true,
@@ -138,7 +138,6 @@ func Login(c *fiber.Ctx) error {
 	})
 
 	return c.SendString(http.WindowReload("/admin/dashboard"))
-
 }
 
 // generateSessionID generates a new session ID
@@ -182,4 +181,30 @@ func UserCreate(c *fiber.Ctx) error {
 
 func UserStore(c *fiber.Ctx) error {
 	return c.SendString("User creation logic not implemented")
+}
+
+func Logout(c *fiber.Ctx) error {
+	log.Println("Logout function called.") // Log entry when function is called
+
+	sessionID := c.Cookies("hey_sesion")
+	if sessionID != "" {
+		log.Printf("Session ID: %s", sessionID) // Log the session ID for debugging
+		err := auth.DeleteSessionFromDB(sessionID)
+		if err != nil {
+			log.Printf("Error deleting session from DB: %v", err)
+		}
+	} else {
+		log.Println("No session ID found.") // Log if no session ID is found
+	}
+
+	// Clear the session cookie
+	c.ClearCookie("hey_sesion")
+	log.Println("Session cookie cleared.") // Log cookie clearing
+
+	// Respond with a JSON message
+	// return c.JSON(fiber.Map{
+	// 	"message": "Logged out successfully",
+	// })
+
+	return c.SendString(http.WindowReload("/admin/login"))
 }
