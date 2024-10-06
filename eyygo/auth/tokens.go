@@ -12,17 +12,9 @@ import (
 	"github.com/mviner000/eyymi/project_name"
 )
 
-type User struct {
-	ID        int
-	Username  string
-	Email     string
-	Password  string
-	LastLogin time.Time
-}
-
 // Configuration constants
 const (
-	keySalt              = "django.contrib.auth.tokens.PasswordResetTokenGenerator"
+	keySalt              = "dfdsfsdfdrato"
 	passwordResetTimeout = 3600 // Example timeout in seconds
 )
 

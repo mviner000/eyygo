@@ -15,13 +15,12 @@ import (
 )
 
 var store = session.New()
-var db *sql.DB
 var tokenGenerator *auth.PasswordResetTokenGenerator
 
 func init() {
 	var err error
 	dbURL := config.GetDatabaseURL(&project_name.AppSettings)
-	db, err = sql.Open("sqlite3", dbURL)
+	db, err := sql.Open("sqlite3", dbURL)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -30,6 +29,10 @@ func init() {
 	}
 	log.Println("Successfully connected to the SQLite3 database")
 
+	// Initialize the database connection in auth package
+	auth.InitDB(db)
+
+	// Initialize the token generator
 	tokenGenerator = auth.NewPasswordResetTokenGenerator()
 }
 
@@ -77,7 +80,8 @@ func Login(c *fiber.Ctx) error {
 		}, nil).Render(c)
 	}
 
-	user, err := getUserByUsername(username)
+	// Fetch the user from the auth service
+	authUser, err := auth.GetUserByUsername(username)
 	if err != nil {
 		log.Printf("Error retrieving user: %v", err)
 		return http.HttpResponseUnauthorized(fiber.Map{
@@ -85,7 +89,8 @@ func Login(c *fiber.Ctx) error {
 		}, nil).Render(c)
 	}
 
-	match, err := config.CheckPasswordHash(password, user.Password)
+	// Password validation
+	match, err := config.CheckPasswordHash(password, authUser.Password)
 	if err != nil || !match {
 		log.Printf("Authentication failed for user: %s", username)
 		return http.HttpResponseUnauthorized(fiber.Map{
@@ -93,9 +98,17 @@ func Login(c *fiber.Ctx) error {
 		}, nil).Render(c)
 	}
 
+	// Map auth.User to admin.User for additional operations
+	user := &User{
+		ID:        authUser.ID,
+		Username:  authUser.Username,
+		Email:     authUser.Email,
+		Password:  authUser.Password,
+		LastLogin: authUser.LastLogin,
+	}
+
 	// Generate token
-	authUser := user.ToAuthUser()
-	token, err := tokenGenerator.MakeToken(authUser)
+	token, err := tokenGenerator.MakeToken(user.ToAuthUser())
 	if err != nil {
 		log.Printf("Token generation failed for user %s: %v", username, err)
 		return http.HttpResponseServerError(fiber.Map{
@@ -104,10 +117,8 @@ func Login(c *fiber.Ctx) error {
 	}
 	log.Printf("Token generated successfully for user %s", username)
 
-	log.Printf("DEBUG: Generated token for user %s: %s", username, token)
-
 	// Update last_login in the database
-	if err := updateLastLogin(user.ID); err != nil {
+	if err := auth.UpdateLastLogin(user.ID); err != nil {
 		log.Printf("Failed to update last login for user %s: %v", username, err)
 		// Continue with login process even if update fails
 	} else {
@@ -133,35 +144,9 @@ func Login(c *fiber.Ctx) error {
 	}
 
 	log.Printf("User authenticated successfully: %s", user.Username)
+
+	// Redirect to the dashboard after successful login
 	return http.HttpResponseRedirect("/admin/dashboard", false).Render(c)
-}
-
-func getUserByUsername(username string) (*User, error) {
-	var user User
-	var lastLogin sql.NullTime
-	query := "SELECT id, username, email, password, last_login FROM auth_user WHERE username = ?"
-	err := db.QueryRow(query, username).Scan(&user.ID, &user.Username, &user.Email, &user.Password, &lastLogin)
-	if err != nil {
-		log.Printf("Error retrieving user %s from database: %v", username, err)
-		return nil, err
-	}
-	if lastLogin.Valid {
-		user.LastLogin = lastLogin.Time
-	} else {
-		user.LastLogin = time.Time{} // Set to zero time if NULL
-	}
-	log.Printf("User %s retrieved successfully from database", username)
-	return &user, nil
-}
-
-func updateLastLogin(userID int) error {
-	_, err := db.Exec("UPDATE auth_user SET last_login = ? WHERE id = ?", time.Now(), userID)
-	if err != nil {
-		log.Printf("Error updating last_login for user ID %d: %v", userID, err)
-	} else {
-		log.Printf("Last login updated successfully for user ID %d", userID)
-	}
-	return err
 }
 
 func Dashboard(c *fiber.Ctx) error {
