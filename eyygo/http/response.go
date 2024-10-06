@@ -156,6 +156,10 @@ func HttpResponseRedirect(url string, permanent bool) *Response {
 	}
 }
 
+func WindowReload(url string) string {
+	return `<script>window.location.href='` + url + `'</script>`
+}
+
 func JsonResponse(data interface{}, status int, headers map[string]string) *Response {
 	if headers == nil {
 		headers = make(map[string]string)

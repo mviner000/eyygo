@@ -71,8 +71,21 @@ func (u *User) ToAuthUser() *auth.User {
 }
 
 func LoginForm(c *fiber.Ctx) error {
-	response := http.HttpResponseOK(fiber.Map{}, nil, "eyygo/admin/templates/login")
-	return response.Render(c)
+	log.Println("LoginForm function called")
+	errorMessage := c.Query("error")
+
+	// Check if it's an HTMX request
+	if c.Get("HX-Request") == "true" {
+		log.Println("HTMX request detected")
+		// If it's an HTMX request, just return the form content
+		return http.HttpResponseHTMX(fiber.Map{
+			"Error": errorMessage,
+		}, "eyygo/admin/templates/login_form.html").Render(c)
+	}
+
+	log.Println("Rendering full login page")
+	// Render the full page with layout
+	return http.HttpResponseHTMX(fiber.Map{}, "eyygo/admin/templates/login.html", "eyygo/admin/templates/layout.html").Render(c)
 }
 
 func Login(c *fiber.Ctx) error {
@@ -124,7 +137,8 @@ func Login(c *fiber.Ctx) error {
 		Secure:   true,
 	})
 
-	return http.HttpResponseRedirect("/admin/dashboard", false).Render(c)
+	return c.SendString(http.WindowReload("/admin/dashboard"))
+
 }
 
 // generateSessionID generates a new session ID
