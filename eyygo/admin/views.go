@@ -7,6 +7,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/session"
+	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/mviner000/eyymi/config"
 	"github.com/mviner000/eyymi/eyygo/auth"
@@ -14,13 +15,19 @@ import (
 	"github.com/mviner000/eyymi/project_name"
 )
 
+var db *sql.DB
+
+func InitDB(database *sql.DB) {
+	db = database
+}
+
 var store = session.New()
 var tokenGenerator *auth.PasswordResetTokenGenerator
 
 func init() {
 	var err error
 	dbURL := config.GetDatabaseURL(&project_name.AppSettings)
-	db, err := sql.Open("sqlite3", dbURL)
+	db, err = sql.Open("sqlite3", dbURL)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -52,7 +59,7 @@ type User struct {
 	PermissionsID sql.NullInt64
 }
 
-// Add this function to convert admin.User to auth.User
+// Convert admin.User to auth.User
 func (u *User) ToAuthUser() *auth.User {
 	return &auth.User{
 		ID:        u.ID,
@@ -111,9 +118,9 @@ func Login(c *fiber.Ctx) error {
 	token, err := tokenGenerator.MakeToken(user.ToAuthUser())
 	if err != nil {
 		log.Printf("Token generation failed for user %s: %v", username, err)
-		return http.HttpResponseServerError(fiber.Map{
+		return http.HttpResponseServerError("Failed to generate authentication token", map[string]string{
 			"error": "Failed to generate authentication token",
-		}, nil).Render(c)
+		}).Render(c)
 	}
 	log.Printf("Token generated successfully for user %s", username)
 
@@ -126,27 +133,38 @@ func Login(c *fiber.Ctx) error {
 	}
 
 	// Create session
-	sess, err := store.Get(c)
+	sessionID := generateSessionID()             // Implement this function to generate a unique session ID
+	expireTime := time.Now().Add(24 * time.Hour) // Set session expiry to 24 hours from now
+
+	// Store session in the database
+	query := `INSERT INTO eyygo_session (session_key, user_id, auth_token, expire_date) VALUES (?, ?, ?, ?)`
+	_, err = db.Exec(query, sessionID, user.ID, token, expireTime)
 	if err != nil {
-		log.Printf("Session creation failed for user %s: %v", username, err)
-		return http.HttpResponseServerError(fiber.Map{
+		log.Printf("Failed to store session in database for user %s: %v", username, err)
+		return http.HttpResponseServerError("Failed to create session", map[string]string{
 			"error": "Failed to create session",
-		}, nil).Render(c)
+		}).Render(c)
 	}
+	log.Printf("Session created successfully for user %s", username)
 
-	sess.Set("user_id", user.ID)
-	sess.Set("auth_token", token)
-	if err := sess.Save(); err != nil {
-		log.Printf("Session save failed for user %s: %v", username, err)
-		return http.HttpResponseServerError(fiber.Map{
-			"error": "Failed to save session",
-		}, nil).Render(c)
-	}
+	// Set the session cookie in the response
+	c.Cookie(&fiber.Cookie{
+		Name:     "session_id",
+		Value:    sessionID,
+		Expires:  expireTime,
+		HTTPOnly: true,
+		Secure:   true,
+	})
 
-	log.Printf("User authenticated successfully: %s", user.Username)
+	response := http.HttpResponseOK(fiber.Map{
+		"message": "Login successful",
+	}, nil, "eyygo/admin/templates/dashboard")
+	return response.Render(c)
+}
 
-	// Redirect to the dashboard after successful login
-	return http.HttpResponseRedirect("/admin/dashboard", false).Render(c)
+// generateSessionID generates a new session ID
+func generateSessionID() string {
+	return uuid.New().String()
 }
 
 func Dashboard(c *fiber.Ctx) error {
