@@ -10,7 +10,6 @@ import (
 // SetupRoutes sets up the admin routes
 func SetupRoutes(app *fiber.App) {
 	log.Println("Admin: Starting to set up admin routes")
-
 	adminGroup := app.Group("/admin")
 
 	// Public routes
@@ -27,7 +26,7 @@ func SetupRoutes(app *fiber.App) {
 	// Protected routes
 	log.Println("Admin: Setting up protected routes with AuthMiddleware")
 	adminGroup.Get("/dashboard", logMiddleware("Dashboard"), auth.AuthMiddleware, Dashboard)
-	adminGroup.Get("/users", logMiddleware("UserIndex"), auth.AuthMiddleware, UserIndex)
+	adminGroup.Get("/users", logMiddleware("UserIndex"), auth.AuthMiddleware, UserList)
 	adminGroup.Get("/users/create", logMiddleware("UserCreate"), auth.AuthMiddleware, UserCreate)
 	adminGroup.Post("/users", logMiddleware("UserStore"), auth.AuthMiddleware, UserStore)
 

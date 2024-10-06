@@ -1,33 +1,37 @@
 package http
 
 import (
+	"bytes"
 	"fmt"
+	"html/template"
 	"net/http"
+	"path/filepath"
 
+	"github.com/aymerick/raymond"
 	"github.com/gofiber/fiber/v2"
 	"github.com/mviner000/eyymi/project_name"
 )
 
-// Updated Response struct to include Template
 type Response struct {
 	StatusCode int
 	Headers    map[string]string
 	Body       interface{}
 	Template   string
+	Layout     string
 }
 
-// Updated HttpResponseOK function
-func HttpResponseOK(body interface{}, headers map[string]string, template ...string) *Response {
-	var tmpl string
-	if len(template) > 0 {
-		tmpl = template[0]
+func HttpResponseOK(body interface{}, headers map[string]string, template string, layout ...string) *Response {
+	var layoutTemplate string
+	if len(layout) > 0 {
+		layoutTemplate = layout[0]
 	}
 
 	return &Response{
 		StatusCode: http.StatusOK,
 		Headers:    headers,
 		Body:       body,
-		Template:   tmpl,
+		Template:   template,
+		Layout:     layoutTemplate,
 	}
 }
 
@@ -35,19 +39,70 @@ func (r *Response) Render(c *fiber.Ctx) error {
 	for key, value := range r.Headers {
 		c.Set(key, value)
 	}
+
+	if r.StatusCode == http.StatusFound || r.StatusCode == http.StatusMovedPermanently {
+		return c.Redirect(r.Headers["Location"], r.StatusCode)
+	}
+
 	if r.Template != "" {
-		// Dynamically resolve the template path using AppSettings
-		templatePath := project_name.AppSettings.TemplateBasePath + r.Template
+		templatePath := filepath.Join(project_name.AppSettings.TemplateBasePath, r.Template)
+		layoutPath := ""
+		if r.Layout != "" {
+			layoutPath = filepath.Join(project_name.AppSettings.TemplateBasePath, r.Layout)
+		}
 
-		// Log the template path for debugging
-		fmt.Println("Rendering template at path:", templatePath)
+		content, err := renderTemplate(templatePath, layoutPath, r.Body)
+		if err != nil {
+			return c.Status(http.StatusInternalServerError).SendString(fmt.Sprintf("Template rendering error: %v", err))
+		}
 
-		return c.Render(templatePath, r.Body)
+		c.Set("Content-Type", "text/html")
+		return c.Status(r.StatusCode).Send(content)
 	} else if r.Body == nil {
 		return c.SendStatus(r.StatusCode)
 	} else {
 		return c.Status(r.StatusCode).JSON(r.Body)
 	}
+}
+
+func renderTemplate(templatePath, layoutPath string, data interface{}) ([]byte, error) {
+	tmpl, err := template.ParseFiles(templatePath)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing template: %v", err)
+	}
+
+	var content bytes.Buffer
+	if err := tmpl.Execute(&content, data); err != nil {
+		return nil, fmt.Errorf("error executing template: %v", err)
+	}
+
+	if layoutPath != "" {
+		layout, err := raymond.ParseFile(layoutPath)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing layout: %v", err)
+		}
+
+		result, err := layout.Exec(map[string]interface{}{
+			"yield": raymond.SafeString(content.String()),
+			"User":  data.(fiber.Map)["User"], // No space after "User"
+		})
+		if err != nil {
+			return nil, fmt.Errorf("error executing layout: %v", err)
+		}
+
+		return []byte(result), nil
+	}
+
+	return content.Bytes(), nil
+}
+
+func HttpResponseHTMX(body interface{}, template string, layout ...string) *Response {
+	headers := map[string]string{"Content-Type": "text/html"}
+	var layoutTemplate string
+	if len(layout) > 0 {
+		layoutTemplate = layout[0]
+	}
+	return HttpResponseOK(body, headers, template, layoutTemplate)
 }
 
 func HttpResponse(body interface{}, status int, headers map[string]string) *Response {
@@ -91,9 +146,9 @@ func HttpResponseServerError(body interface{}, headers map[string]string) *Respo
 }
 
 func HttpResponseRedirect(url string, permanent bool) *Response {
-	status := http.StatusFound
+	status := http.StatusFound // 302
 	if permanent {
-		status = http.StatusMovedPermanently
+		status = http.StatusMovedPermanently // 301
 	}
 	return &Response{
 		StatusCode: status,

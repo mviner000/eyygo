@@ -48,16 +48,15 @@ func AuthMiddleware(c *fiber.Ctx) error {
 		log.Printf("AuthMiddleware: Invalid token for user %s, redirecting to login", user.Username)
 		return c.Redirect("/admin/login")
 	}
-
 	log.Printf("AuthMiddleware: Token valid for user %s", user.Username)
 
 	// Store user information in the context for later use
 	c.Locals("user", user)
 	log.Printf("AuthMiddleware: User %s stored in context", user.Username)
 
-	// All checks passed, redirect to dashboard
-	log.Println("AuthMiddleware: Authentication successful, redirecting to dashboard")
-	return c.Redirect("/admin/dashboard")
+	// All checks passed, proceed to the next handler
+	log.Println("AuthMiddleware: Authentication successful, proceeding to next handler")
+	return c.Next()
 }
 
 func getSessionFromDB(c *fiber.Ctx) (string, string, error) {

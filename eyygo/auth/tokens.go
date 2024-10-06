@@ -5,11 +5,10 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
-	"github.com/mviner000/eyymi/project_name"
+	"github.com/mviner000/eyymi/eyygo/shared"
 )
 
 // Configuration constants
@@ -20,83 +19,60 @@ const (
 
 // PasswordResetTokenGenerator handles token generation and validation.
 type PasswordResetTokenGenerator struct {
-	secret          string
-	secretFallbacks []string
+	secret string
 }
 
 // NewPasswordResetTokenGenerator creates a new instance of the token generator.
 func NewPasswordResetTokenGenerator() *PasswordResetTokenGenerator {
 	return &PasswordResetTokenGenerator{
-		secret: project_name.AppSettings.SecretKey,
+		secret: shared.GetConfig().SecretKey,
 	}
-}
-
-func (g *PasswordResetTokenGenerator) numSeconds(t time.Time) int {
-	return int(t.Unix())
 }
 
 // MakeToken generates a token for the given user.
 func (g *PasswordResetTokenGenerator) MakeToken(user *User) (string, error) {
 	if user == nil {
-		log.Println("Error: Attempted to generate token for nil user")
 		return "", fmt.Errorf("cannot generate token for nil user")
 	}
-	timestamp := g.numSeconds(time.Now())
-	token := g.makeTokenWithTimestamp(user, timestamp, g.secret)
-	log.Printf("Token generated successfully for user ID %d", user.ID)
+
+	timestamp := time.Now().Unix()
+	token := g.makeTokenWithTimestamp(user, timestamp)
 	return token, nil
 }
 
 // CheckToken verifies the validity of the token for the given user.
 func (g *PasswordResetTokenGenerator) CheckToken(user *User, token string) bool {
-	if user == nil || token == "" {
-		log.Println("Error: Attempted to check token with nil user or empty token")
-		return false
-	}
-
 	parts := strings.Split(token, "-")
 	if len(parts) != 2 {
-		log.Printf("Error: Invalid token format for user ID %d", user.ID)
 		return false
 	}
 
-	tsB36 := parts[0]
-	ts, err := base36ToInt(tsB36)
+	tsStr := parts[0]
+	ts, err := base36ToInt(tsStr)
 	if err != nil {
-		log.Printf("Error: Failed to parse timestamp from token for user ID %d: %v", user.ID, err)
 		return false
 	}
 
-	for _, secret := range append([]string{g.secret}, g.secretFallbacks...) {
-		expectedToken := g.makeTokenWithTimestamp(user, ts, secret)
-		if constantTimeCompare(expectedToken, token) {
-			if time.Now().Unix()-int64(ts) <= passwordResetTimeout {
-				log.Printf("Token validated successfully for user ID %d", user.ID)
-				return true
-			} else {
-				log.Printf("Token expired for user ID %d", user.ID)
-			}
-		}
+	if time.Now().Unix()-int64(ts) > passwordResetTimeout {
+		return false
 	}
 
-	log.Printf("Token validation failed for user ID %d", user.ID)
-	return false
+	expectedToken := g.makeTokenWithTimestamp(user, int64(ts))
+	return constantTimeCompare(expectedToken, token)
 }
 
-// makeTokenWithTimestamp creates a token using a timestamp and secret.
-func (g *PasswordResetTokenGenerator) makeTokenWithTimestamp(user *User, timestamp int, secret string) string {
-	tsB36 := intToBase36(timestamp)
-	hashString := g.saltedHMAC(keySalt, g.makeHashValue(user, timestamp), secret)
-	return fmt.Sprintf("%s-%s", tsB36, hashString[:len(hashString)/2])
+// makeTokenWithTimestamp creates a token using a timestamp.
+func (g *PasswordResetTokenGenerator) makeTokenWithTimestamp(user *User, timestamp int64) string {
+	tsB36 := intToBase36(int(timestamp))
+	hashValue := g.makeHashValue(user, timestamp)
+	hashString := g.saltedHMAC(keySalt, hashValue, g.secret)
+	token := fmt.Sprintf("%s-%s", tsB36, hashString[:len(hashString)/2])
+	return token
 }
 
 // makeHashValue generates a hash value based on user details and timestamp.
-func (g *PasswordResetTokenGenerator) makeHashValue(user *User, timestamp int) string {
-	loginTimestamp := ""
-	if !user.LastLogin.IsZero() {
-		loginTimestamp = user.LastLogin.UTC().Format(time.RFC3339)
-	}
-	return fmt.Sprintf("%d%s%s%d%s", user.ID, user.Password, loginTimestamp, timestamp, user.Email)
+func (g *PasswordResetTokenGenerator) makeHashValue(user *User, timestamp int64) string {
+	return fmt.Sprintf("%d%s%d%s", user.ID, user.Password, timestamp, user.Email)
 }
 
 // saltedHMAC performs a salted HMAC operation using SHA-256.
