@@ -17,6 +17,8 @@ import (
 
 var db *sql.DB
 
+const SiteName = "Eyygo Administration"
+
 func InitDB(database *sql.DB) {
 	db = database
 }
@@ -85,7 +87,10 @@ func LoginForm(c *fiber.Ctx) error {
 
 	log.Println("Rendering full login page")
 	// Render the full page with layout
-	return http.HttpResponseHTMX(fiber.Map{}, "eyygo/admin/templates/login.html", "eyygo/admin/templates/layout.html").Render(c)
+	return http.HttpResponseHTMX(fiber.Map{
+		"Error":     errorMessage,
+		"MetaTitle": "Login | " + SiteName,
+	}, "eyygo/admin/templates/login.html", "eyygo/admin/templates/layout.html").Render(c)
 }
 
 func Login(c *fiber.Ctx) error {
@@ -159,7 +164,8 @@ func Dashboard(c *fiber.Ctx) error {
 	log.Printf("User data: %+v", user)
 
 	return http.HttpResponseHTMX(fiber.Map{
-		"User": user, // No space after "User"
+		"User":      user,
+		"MetaTitle": "Dashboard | " + SiteName,
 	}, "eyygo/admin/templates/dashboard.html", "eyygo/admin/templates/layout.html").Render(c)
 }
 

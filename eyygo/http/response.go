@@ -82,10 +82,23 @@ func renderTemplate(templatePath, layoutPath string, data interface{}) ([]byte, 
 			return nil, fmt.Errorf("error parsing layout: %v", err)
 		}
 
-		result, err := layout.Exec(map[string]interface{}{
+		dataMap, ok := data.(fiber.Map)
+		if !ok {
+			dataMap = fiber.Map{}
+		}
+
+		layoutData := fiber.Map{
 			"yield": raymond.SafeString(content.String()),
-			"User":  data.(fiber.Map)["User"], // No space after "User"
-		})
+			"title": dataMap["MetaTitle"],
+		}
+
+		for k, v := range dataMap {
+			if k != "MetaTitle" {
+				layoutData[k] = v
+			}
+		}
+
+		result, err := layout.Exec(layoutData)
 		if err != nil {
 			return nil, fmt.Errorf("error executing layout: %v", err)
 		}
