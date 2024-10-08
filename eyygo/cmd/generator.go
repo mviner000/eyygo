@@ -2,13 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/mviner000/eyymi/eyygo/germ"
-	"github.com/mviner000/eyymi/eyygo/germ/schema"
 )
 
+// GenerateMigration generates migration SQL for provided models
 func GenerateMigration(db *germ.DB, dst ...interface{}) (string, error) {
 	var upStatements, downStatements []string
 
@@ -40,6 +39,7 @@ func GenerateMigration(db *germ.DB, dst ...interface{}) (string, error) {
 	return migration, nil
 }
 
+// generateCreateTableSQL generates the SQL for creating a table
 func generateCreateTableSQL(db *germ.DB, model interface{}) (string, error) {
 	stmt := &germ.Statement{DB: db}
 	if err := stmt.Parse(model); err != nil {
@@ -48,91 +48,42 @@ func generateCreateTableSQL(db *germ.DB, model interface{}) (string, error) {
 
 	var fields []string
 	for _, field := range stmt.Schema.Fields {
-		fieldStr := fmt.Sprintf("%s %s", field.DBName, getDataType(field))
-		if field.PrimaryKey {
-			fieldStr += getPrimaryKeyString(db)
+		expr := db.Migrator().FullDataTypeOf(field)
+		fieldType := fmt.Sprintf("%v", expr.SQL)
+
+		// Split the fieldType into its components
+		parts := strings.Fields(fieldType)
+		dataType := parts[0]
+
+		constraints := make(map[string]bool)
+		for _, part := range parts[1:] {
+			constraints[strings.ToUpper(part)] = true
 		}
-		if field.NotNull {
-			fieldStr += " NOT NULL"
+
+		// Add missing constraints
+		if field.PrimaryKey && !constraints["PRIMARY"] {
+			constraints["PRIMARY KEY AUTOINCREMENT"] = true
 		}
+		if field.NotNull && !constraints["NOT"] {
+			constraints["NOT NULL"] = true
+		}
+		if field.Unique && !constraints["UNIQUE"] {
+			constraints["UNIQUE"] = true
+		}
+
+		// Construct the field string
+		fieldStr := fmt.Sprintf("%s %s", field.Name, dataType)
+		for constraint := range constraints {
+			fieldStr += " " + constraint
+		}
+
 		fields = append(fields, fieldStr)
 	}
 
-	return fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (\n  %s\n);", stmt.Table, strings.Join(fields, ",\n  ")), nil
+	return fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (\n %s\n);", stmt.Table, strings.Join(fields, ",\n ")), nil
 }
 
-func generateAlterTableSQL(db *germ.DB, model interface{}) ([]string, error) {
-	stmt := &germ.Statement{DB: db}
-	if err := stmt.Parse(model); err != nil {
-		return nil, err
-	}
-
-	var statements []string
-	migrator := db.Migrator()
-
-	for _, field := range stmt.Schema.Fields {
-		if !migrator.HasColumn(stmt.Table, field.DBName) {
-			s := fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", stmt.Table, field.DBName, string(field.DataType))
-			if field.NotNull {
-				s += " NOT NULL"
-			}
-			statements = append(statements, s)
-		}
-	}
-
-	return statements, nil
-}
-
-func generateUpdatedAtTriggerSQL(tableName string) []string {
-	return []string{
-		"-- +migrate StatementBegin",
-		`CREATE OR REPLACE FUNCTION update_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;`,
-		"-- +migrate StatementEnd",
-		"",
-		fmt.Sprintf(`CREATE TRIGGER update_%s_updated_at
-BEFORE UPDATE ON %s
-FOR EACH ROW
-EXECUTE FUNCTION update_updated_at();`, tableName, tableName),
-	}
-}
-
-func getDataType(field *schema.Field) string {
-	switch field.DataType {
-	case "uint", "int", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64":
-		return "INTEGER"
-	case "float32", "float64":
-		return "REAL"
-	case "bool":
-		return "BOOLEAN"
-	case "string":
-		return "TEXT"
-	case "time.Time":
-		return "DATETIME"
-	default:
-		// For custom types, try to determine the underlying type
-		if field.FieldType != nil {
-			switch field.FieldType.Kind() {
-			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
-				reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-				return "INTEGER"
-			case reflect.Float32, reflect.Float64:
-				return "REAL"
-			case reflect.Bool:
-				return "BOOLEAN"
-			case reflect.String:
-				return "TEXT"
-			}
-		}
-		return "TEXT" // Default to TEXT for unknown types
-	}
-}
-
+// getPrimaryKeyString returns the primary key definition based on the database dialect
 func getPrimaryKeyString(db *germ.DB) string {
 	switch db.Dialector.Name() {
 	case "sqlite":
