@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"germ.io/germ/clause"
+	"github.com/mviner000/eyymi/eyygo/germ/clause"
 )
 
 func TestOrderBy(t *testing.T) {

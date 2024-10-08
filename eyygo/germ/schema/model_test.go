@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"time"
 
-	"germ.io/germ"
-	"germ.io/germ/utils/tests"
+	"github.com/mviner000/eyymi/eyygo/germ"
+	"github.com/mviner000/eyymi/eyygo/germ/utils/tests"
 )
 
 type User struct {

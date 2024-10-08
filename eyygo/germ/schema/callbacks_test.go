@@ -5,8 +5,8 @@ import (
 	"sync"
 	"testing"
 
-	"germ.io/germ"
-	"germ.io/germ/schema"
+	"github.com/mviner000/eyymi/eyygo/germ"
+	"github.com/mviner000/eyymi/eyygo/germ/schema"
 )
 
 type UserWithCallback struct{}

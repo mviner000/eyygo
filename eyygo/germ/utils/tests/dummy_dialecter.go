@@ -1,11 +1,11 @@
 package tests
 
 import (
-	"germ.io/germ"
-	"germ.io/germ/callbacks"
-	"germ.io/germ/clause"
-	"germ.io/germ/logger"
-	"germ.io/germ/schema"
+	"github.com/mviner000/eyymi/eyygo/germ"
+	"github.com/mviner000/eyymi/eyygo/germ/callbacks"
+	"github.com/mviner000/eyymi/eyygo/germ/clause"
+	"github.com/mviner000/eyymi/eyygo/germ/logger"
+	"github.com/mviner000/eyymi/eyygo/germ/schema"
 )
 
 type DummyDialector struct {

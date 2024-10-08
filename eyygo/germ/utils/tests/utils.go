@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"germ.io/germ/utils"
+	"github.com/mviner000/eyymi/eyygo/germ/utils"
 )
 
 func AssertObjEqual(t *testing.T, r, e interface{}, names ...string) {

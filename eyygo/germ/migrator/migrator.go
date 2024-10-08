@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"germ.io/germ"
-	"germ.io/germ/clause"
-	"germ.io/germ/logger"
-	"germ.io/germ/schema"
+	"github.com/mviner000/eyymi/eyygo/germ"
+	"github.com/mviner000/eyymi/eyygo/germ/clause"
+	"github.com/mviner000/eyymi/eyygo/germ/logger"
+	"github.com/mviner000/eyymi/eyygo/germ/schema"
 )
 
 // This regular expression seeks to find a sequence of digits (\d+) among zero or more non-digit characters (\D*),

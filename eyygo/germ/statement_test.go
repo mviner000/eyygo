@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"germ.io/germ/clause"
+	"github.com/mviner000/eyymi/eyygo/germ/clause"
 )
 
 func TestWhereCloneCorruption(t *testing.T) {

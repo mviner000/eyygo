@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"time"
 
-	"germ.io/germ/schema"
-	"germ.io/germ/utils"
+	"github.com/mviner000/eyymi/eyygo/germ/schema"
+	"github.com/mviner000/eyymi/eyygo/germ/utils"
 )
 
 // prepareValues prepare values slice

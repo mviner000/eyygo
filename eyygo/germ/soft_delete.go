@@ -6,9 +6,9 @@ import (
 	"encoding/json"
 	"reflect"
 
-	"germ.io/germ/clause"
-	"germ.io/germ/schema"
 	"github.com/jinzhu/now"
+	"github.com/mviner000/eyymi/eyygo/germ/clause"
+	"github.com/mviner000/eyymi/eyygo/germ/schema"
 )
 
 type DeletedAt sql.NullTime

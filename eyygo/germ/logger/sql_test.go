@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"germ.io/germ/logger"
 	"github.com/jinzhu/now"
+	"github.com/mviner000/eyymi/eyygo/germ/logger"
 )
 
 type JSON json.RawMessage

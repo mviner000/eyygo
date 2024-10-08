@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"germ.io/germ"
-	"germ.io/germ/clause"
-	"germ.io/germ/schema"
+	"github.com/mviner000/eyymi/eyygo/germ"
+	"github.com/mviner000/eyymi/eyygo/germ/clause"
+	"github.com/mviner000/eyymi/eyygo/germ/schema"
 )
 
 var schemaCache = &sync.Map{}

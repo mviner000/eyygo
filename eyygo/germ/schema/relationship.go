@@ -10,7 +10,7 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
-	"germ.io/germ/clause"
+	"github.com/mviner000/eyymi/eyygo/germ/clause"
 )
 
 // RelationshipType relationship type

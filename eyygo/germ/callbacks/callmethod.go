@@ -3,7 +3,7 @@ package callbacks
 import (
 	"reflect"
 
-	"germ.io/germ"
+	"github.com/mviner000/eyymi/eyygo/germ"
 )
 
 func callMethod(db *germ.DB, fc func(value interface{}, tx *germ.DB) bool) {

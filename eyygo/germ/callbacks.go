@@ -8,8 +8,8 @@ import (
 	"sort"
 	"time"
 
-	"germ.io/germ/schema"
-	"germ.io/germ/utils"
+	"github.com/mviner000/eyymi/eyygo/germ/schema"
+	"github.com/mviner000/eyymi/eyygo/germ/utils"
 )
 
 func initializeCallbacks(db *DB) *callbacks {

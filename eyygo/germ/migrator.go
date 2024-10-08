@@ -3,8 +3,8 @@ package germ
 import (
 	"reflect"
 
-	"germ.io/germ/clause"
-	"germ.io/germ/schema"
+	"github.com/mviner000/eyymi/eyygo/germ/clause"
+	"github.com/mviner000/eyymi/eyygo/germ/schema"
 )
 
 // Migrator returns migrator

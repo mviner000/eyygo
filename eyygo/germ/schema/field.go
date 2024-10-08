@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"germ.io/germ/clause"
-	"germ.io/germ/utils"
 	"github.com/jinzhu/now"
+	"github.com/mviner000/eyymi/eyygo/germ/clause"
+	"github.com/mviner000/eyymi/eyygo/germ/utils"
 )
 
 // special types' reflect type

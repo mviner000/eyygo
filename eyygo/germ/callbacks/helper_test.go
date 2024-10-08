@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"germ.io/germ"
-	"germ.io/germ/clause"
+	"github.com/mviner000/eyymi/eyygo/germ"
+	"github.com/mviner000/eyymi/eyygo/germ/clause"
 )
 
 func TestLoadOrStoreVisitMap(t *testing.T) {

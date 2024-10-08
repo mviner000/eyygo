@@ -9,8 +9,8 @@ import (
 	"strings"
 	"sync"
 
-	"germ.io/germ/clause"
-	"germ.io/germ/logger"
+	"github.com/mviner000/eyymi/eyygo/germ/clause"
+	"github.com/mviner000/eyymi/eyygo/germ/logger"
 )
 
 type callbackType string

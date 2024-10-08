@@ -4,10 +4,10 @@ import (
 	"sync"
 	"testing"
 
-	"germ.io/germ"
-	"germ.io/germ/clause"
-	"germ.io/germ/schema"
-	"germ.io/germ/utils/tests"
+	"github.com/mviner000/eyymi/eyygo/germ"
+	"github.com/mviner000/eyymi/eyygo/germ/clause"
+	"github.com/mviner000/eyymi/eyygo/germ/schema"
+	"github.com/mviner000/eyymi/eyygo/germ/utils/tests"
 )
 
 func TestJoin(t *testing.T) {

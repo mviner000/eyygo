@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"germ.io/germ/utils"
+	"github.com/mviner000/eyymi/eyygo/germ/utils"
 )
 
 // ErrRecordNotFound record not found error

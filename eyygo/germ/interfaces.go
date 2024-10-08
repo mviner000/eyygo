@@ -4,8 +4,8 @@ import (
 	"context"
 	"database/sql"
 
-	"germ.io/germ/clause"
-	"germ.io/germ/schema"
+	"github.com/mviner000/eyymi/eyygo/germ/clause"
+	"github.com/mviner000/eyymi/eyygo/germ/schema"
 )
 
 // Dialector germ database dialector

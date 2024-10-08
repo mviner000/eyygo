@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"germ.io/germ/clause"
+	"github.com/mviner000/eyymi/eyygo/germ/clause"
 )
 
 // reg match english letters and midline

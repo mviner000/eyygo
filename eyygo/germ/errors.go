@@ -3,7 +3,7 @@ package germ
 import (
 	"errors"
 
-	"germ.io/germ/logger"
+	"github.com/mviner000/eyymi/eyygo/germ/logger"
 )
 
 var (

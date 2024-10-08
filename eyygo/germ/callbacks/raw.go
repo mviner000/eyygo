@@ -1,7 +1,7 @@
 package callbacks
 
 import (
-	"germ.io/germ"
+	"github.com/mviner000/eyymi/eyygo/germ"
 )
 
 func RawExec(db *germ.DB) {

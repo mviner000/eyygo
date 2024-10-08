@@ -8,10 +8,10 @@ import (
 	"reflect"
 	"strings"
 
-	"germ.io/germ/clause"
-	"germ.io/germ/logger"
-	"germ.io/germ/schema"
-	"germ.io/germ/utils"
+	"github.com/mviner000/eyymi/eyygo/germ/clause"
+	"github.com/mviner000/eyymi/eyygo/germ/logger"
+	"github.com/mviner000/eyymi/eyygo/germ/schema"
+	"github.com/mviner000/eyymi/eyygo/germ/utils"
 )
 
 // Create inserts value, returning the inserted data's primary key in value's id

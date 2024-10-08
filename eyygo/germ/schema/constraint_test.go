@@ -5,8 +5,8 @@ import (
 	"sync"
 	"testing"
 
-	"germ.io/germ/schema"
-	"germ.io/germ/utils/tests"
+	"github.com/mviner000/eyymi/eyygo/germ/schema"
+	"github.com/mviner000/eyymi/eyygo/germ/utils/tests"
 )
 
 type UserCheck struct {

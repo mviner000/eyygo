@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"germ.io/germ/clause"
-	"germ.io/germ/logger"
-	"germ.io/germ/schema"
+	"github.com/mviner000/eyymi/eyygo/germ/clause"
+	"github.com/mviner000/eyymi/eyygo/germ/logger"
+	"github.com/mviner000/eyymi/eyygo/germ/schema"
 )
 
 // for Config.cacheStore store PreparedStmtDB key

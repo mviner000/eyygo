@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"germ.io/germ/clause"
+	"github.com/mviner000/eyymi/eyygo/germ/clause"
 )
 
 func TestSet(t *testing.T) {
