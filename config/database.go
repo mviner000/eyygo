@@ -45,12 +45,22 @@ func GetDatabaseURL(cfg Config) string {
 	var dbURL string
 	switch db.Engine {
 	case "sqlite3":
-		dbPath, err := filepath.Abs(db.Name)
-		if err != nil {
-			log.Printf("Error getting absolute path for database: %v", err)
-			dbPath = db.Name
+		// For SQLite3, use the DB_NAME as the file path
+		dbURL = db.Name
+		// If DB_NAME doesn't have a .db or .sqlite3 extension, add .db
+		if ext := filepath.Ext(dbURL); ext != ".db" && ext != ".sqlite3" {
+			dbURL += ".db"
 		}
-		dbURL = dbPath
+		// If it's not an absolute path, make it relative to the current directory
+		if !filepath.IsAbs(dbURL) {
+			dbURL = filepath.Join(".", dbURL)
+		}
+	case "mysql":
+		dbURL = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+			db.User, db.Password, db.Host, db.Port, db.Name)
+	case "postgres":
+		dbURL = fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable",
+			db.Host, db.Port, db.User, db.Name, db.Password)
 	default:
 		log.Printf("Unsupported database engine: %s, falling back to SQLite", db.Engine)
 		dbPath, err := filepath.Abs("db.sqlite3")

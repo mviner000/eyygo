@@ -1,57 +1,75 @@
 package cmd
 
 import (
-	"database/sql"
 	"fmt"
+	"log"
+	"os"
+	"path/filepath"
+	"time"
 
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/mviner000/eyymi/config"
-	"github.com/mviner000/eyymi/eyygo/admin"
-	"github.com/mviner000/eyymi/eyygo/migrations"
-	"github.com/mviner000/eyymi/eyygo/operations"
+	"github.com/mviner000/eyymi/eyygo/germ"
+	"github.com/mviner000/eyymi/eyygo/germ/driver/sqlite"
+	models "github.com/mviner000/eyymi/eyygo/post"
 	"github.com/mviner000/eyymi/project_name"
 	"github.com/spf13/cobra"
 )
 
-var MakeMigrationsCmd = &cobra.Command{
+var MakeMigrationCmd = &cobra.Command{
 	Use:   "makemigrations",
-	Short: "Detect model changes and create new migrations",
+	Short: "Create a new migration file",
 	Run: func(cmd *cobra.Command, args []string) {
-		makeMigrations()
+		log.Println("Creating new migration file...")
+
+		// Get database URL
+		dbURL := config.GetDatabaseURL(&project_name.AppSettings)
+		if dbURL == "" {
+			log.Fatalf("Unsupported database engine: %s", project_name.AppSettings.GetDatabaseConfig().Engine)
+		}
+
+		// Initialize database
+		db, err := germ.Open(sqlite.Open(dbURL), &germ.Config{})
+		if err != nil {
+			log.Fatalf("GERM DB Failed: Unable to connect to database: %v", err)
+		}
+
+		// Get the underlying sql.DB
+		sqlDB, err := db.DB()
+		if err != nil {
+			log.Fatalf("Failed to get underlying SQL DB: %v", err)
+		}
+		defer sqlDB.Close()
+
+		// Generate migration content
+		migrationContent, err := generateMigrationContent(db)
+		if err != nil {
+			log.Fatalf("Failed to generate migration content: %v", err)
+		}
+
+		// Create migration file
+		err = createMigrationFile(migrationContent)
+		if err != nil {
+			log.Fatalf("Failed to create migration file: %v", err)
+		}
+
+		log.Println("Migration file created successfully.")
 	},
 }
 
-func makeMigrations() {
-	// Use the project_name.AppSettings to get the database URL
-	dbURL := config.GetDatabaseURL(&project_name.AppSettings)
+func generateMigrationContent(db *germ.DB) (string, error) {
+	// This function will use GERM to generate the migration content
+	return GenerateMigration(db, &models.Post{})
+}
 
-	db, err := sql.Open("sqlite3", dbURL)
-	if err != nil {
-		fmt.Printf("Failed to connect to database: %v\n", err)
-		return
-	}
-	defer db.Close()
+func createMigrationFile(content string) error {
+	timestamp := time.Now().Format("20060102150405")
+	filename := fmt.Sprintf("%s_migration.sql", timestamp)
 
-	models := admin.GetModels()
-
-	var allOps []operations.Operation
-	for _, model := range models {
-		ops, err := migrations.DetectChanges(model, db)
-		if err != nil {
-			fmt.Printf("Error detecting changes for model %s: %v\n", model.TableName, err)
-			return
-		}
-		allOps = append(allOps, ops...)
+	migrationsDir := "migrations"
+	if err := os.MkdirAll(migrationsDir, os.ModePerm); err != nil {
+		return err
 	}
 
-	if len(allOps) == 0 {
-		fmt.Println("No changes detected.")
-		return
-	}
-
-	err = migrations.GenerateMigration(allOps)
-	if err != nil {
-		fmt.Printf("Error generating migration: %v\n", err)
-		return
-	}
+	filePath := filepath.Join(migrationsDir, filename)
+	return os.WriteFile(filePath, []byte(content), 0644)
 }
