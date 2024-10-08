@@ -58,7 +58,7 @@ var MakeMigrationCmd = &cobra.Command{
 
 func generateMigrationContent(db *germ.DB) (string, error) {
 	// Use GERM to generate migration content for all models
-	return GenerateMigration(db, &models.User{}, &models.Post{}, &models.Follower{}, &models.Role{}, &models.Category{})
+	return GenerateMigration(db, &models.User{}, &models.Post{}, &models.Follower{}, &models.Role{}, &models.Like{})
 	// return GenerateMigration(db, &models.Borrower{}, &models.Book{}, &models.Author{}, &models.Rental{}, &models.Category{})
 }
 

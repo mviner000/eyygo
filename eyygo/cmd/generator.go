@@ -6,24 +6,45 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/mviner000/eyymi/eyygo/germ"
 	"github.com/mviner000/eyymi/eyygo/germ/schema"
 )
+
+var validate *validator.Validate
+
+// InitializeValidator initializes the validator
+func InitializeValidator() {
+	validate = validator.New()
+}
 
 // GenerateMigration generates migration SQL for provided models
 func GenerateMigration(db *germ.DB, dst ...interface{}) (string, error) {
 	var upStatements []string
 	tableNames := make(map[string]bool)
 
+	validate := validator.New() // Ensure the validator is initialized
+
 	for _, model := range dst {
+		if model == nil {
+			return "", fmt.Errorf("model cannot be nil")
+		}
+
 		stmt := &germ.Statement{DB: db}
 		if err := stmt.Parse(model); err != nil {
+			fmt.Println("Failed to parse model:", err, "model:", model)
 			return "", err
 		}
 
+		// Validate model
+		if err := validate.Struct(model); err != nil {
+			return "", fmt.Errorf("validation error: %v", err)
+		}
+
 		// Generate "Up" migration
-		createTableSQL, err := generateCreateTableSQL(db, model)
+		createTableSQL, err := generateCreateTableSQL(db, stmt)
 		if err != nil {
+			fmt.Println("Failed to generate create table SQL:", err, "table:", stmt.Table)
 			return "", err
 		}
 
@@ -33,6 +54,7 @@ func GenerateMigration(db *germ.DB, dst ...interface{}) (string, error) {
 		// Handle join tables
 		joinTableSQL, err := generateJoinTableSQL(stmt)
 		if err != nil {
+			fmt.Println("Failed to generate join table SQL:", err, "table:", stmt.Table)
 			return "", err
 		}
 		if joinTableSQL != "" {
@@ -59,7 +81,7 @@ func GenerateMigration(db *germ.DB, dst ...interface{}) (string, error) {
 	return migration, nil
 }
 
-// Helper function to extract join table names from SQL
+// extractJoinTableNames extracts join table names from SQL
 func extractJoinTableNames(sql string) []string {
 	re := regexp.MustCompile(`CREATE TABLE IF NOT EXISTS (\w+)`)
 	matches := re.FindAllStringSubmatch(sql, -1)
@@ -72,7 +94,7 @@ func extractJoinTableNames(sql string) []string {
 	return names
 }
 
-// Helper function to generate "Down" migration
+// generateDownMigration generates the "Down" migration
 func generateDownMigration(tableNames map[string]bool) []string {
 	var downStatements []string
 	for tableName := range tableNames {
@@ -104,55 +126,99 @@ func removeDuplicateTableDefinitions(sqlString string) string {
 	return strings.Join(result, "\n\n")
 }
 
-// generateCreateTableSQL generates the SQL for creating a table
-func generateCreateTableSQL(db *germ.DB, model interface{}) (string, error) {
-	stmt := &germ.Statement{DB: db}
-	if err := stmt.Parse(model); err != nil {
-		return "", err
-	}
-
+// generateCreateTableSQL generates the SQL for creating a table, including foreign key constraints
+// generateCreateTableSQL generates the SQL for creating a table, including foreign key constraints
+func generateCreateTableSQL(db *germ.DB, stmt *germ.Statement) (string, error) {
 	fields := extractFields(db, stmt)
 
-	createTableSQL := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (\n %s\n);",
-		stmt.Table, strings.Join(fields, ",\n "))
+	var fieldDefs []string
+	var constraints []string
 
-	joinTableSQL, err := generateJoinTableSQL(stmt)
-	if err != nil {
-		return "", err
+	for _, field := range fields {
+		if strings.Contains(field, "CONSTRAINT") {
+			constraints = append(constraints, field)
+		} else {
+			fieldDefs = append(fieldDefs, field)
+		}
 	}
 
-	if joinTableSQL != "" {
-		createTableSQL += "\n\n" + joinTableSQL
+	// Join field definitions and constraints separately
+	fieldDefsSQL := strings.Join(fieldDefs, ",\n ")
+	constraintsSQL := strings.Join(constraints, ",\n ")
+
+	// Construct the full CREATE TABLE SQL statement
+	var createTableSQL string
+	if constraintsSQL != "" {
+		createTableSQL = fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (\n %s,\n %s\n);",
+			stmt.Table, fieldDefsSQL, constraintsSQL)
+	} else {
+		createTableSQL = fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (\n %s\n);",
+			stmt.Table, fieldDefsSQL)
 	}
 
 	return createTableSQL, nil
 }
 
+// extractFields generates column definitions, including foreign key, unique, and check constraints
 func extractFields(db *germ.DB, stmt *germ.Statement) []string {
 	var fields []string
+
+	fmt.Printf("Extracting fields for table: %s\n", stmt.Table)
 
 	for _, field := range stmt.Schema.Fields {
 		fieldSQL := db.Migrator().FullDataTypeOf(field).SQL
 		if fieldSQL != "" {
 			fieldStr := fmt.Sprintf("%s %s", field.DBName, fieldSQL)
 
+			fmt.Printf("Processing field: %s\n", field.DBName)
+
 			// Ensure NOT NULL is only added once
 			if field.NotNull {
-				fieldStr = removeNotNull(fieldStr) // Remove any existing NOT NULL
+				fieldStr = removeNotNull(fieldStr)
 				fieldStr += " NOT NULL"
+			}
+
+			// Handle datetime fields
+			if strings.Contains(fieldSQL, "datetime") {
+				if db.Name() == "sqlite" || db.Name() == "sqlite3" {
+					fieldStr = fmt.Sprintf("%s TEXT", field.DBName)
+				}
 			}
 
 			fields = append(fields, fieldStr)
 
-			if foreignKey := field.TagSettings["FOREIGNKEY"]; foreignKey != "" {
-				refTable := field.TagSettings["REFERENCES"]
-				if refTable == "" {
-					refTable = foreignKey
+			// Handle foreign key constraints
+			hasForeignKey, refField := hasForeignKeyConstraint(field)
+			if hasForeignKey {
+				var refTable string
+				switch stmt.Table {
+				case "users":
+					refTable = "roles"
+				case "posts":
+					refTable = "users"
+				case "followers":
+					refTable = "users"
+				default:
+					refTable = field.TagSettings["references"]
+					if refTable == "" {
+						refTable = stmt.Schema.Table
+					}
 				}
+
+				fmt.Printf("Foreign key detected for %s.%s referencing table: %s\n", stmt.Table, field.DBName, refTable)
+
 				fkName := fmt.Sprintf("fk_%s_%s", stmt.Table, field.DBName)
-				fk := fmt.Sprintf("CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(id)",
-					fkName, field.DBName, refTable)
+				fk := fmt.Sprintf("CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s) ON DELETE CASCADE",
+					fkName, field.DBName, refTable, refField)
 				fields = append(fields, fk)
+			}
+
+			// Handle unique constraints
+			if field.Unique {
+				fmt.Printf("Unique constraint detected for %s.%s\n", stmt.Table, field.DBName)
+				uniName := fmt.Sprintf("uk_%s_%s", stmt.Table, field.DBName)
+				uni := fmt.Sprintf("CONSTRAINT %s UNIQUE (%s)", uniName, field.DBName)
+				fields = append(fields, uni)
 			}
 		}
 	}
@@ -160,24 +226,42 @@ func extractFields(db *germ.DB, stmt *germ.Statement) []string {
 	return fields
 }
 
-// Helper function to remove existing NOT NULL constraint
+// hasForeignKeyConstraint checks if a foreign key constraint is defined for the field
+func hasForeignKeyConstraint(field *schema.Field) (bool, string) {
+	for key, value := range field.TagSettings {
+		if strings.EqualFold(key, "foreignKey") {
+			fmt.Printf("Foreign key tag detected for field %s: %s\n", field.Name, value)
+			return true, value
+		}
+	}
+	return false, "id" // Default to 'id' if no specific field is specified
+}
+
+// removeNotNull removes existing NOT NULL constraint
 func removeNotNull(fieldStr string) string {
 	return strings.ReplaceAll(fieldStr, " NOT NULL", "")
 }
 
+// generateJoinTableSQL creates SQL for join tables, including foreign key constraints
 func generateJoinTableSQL(stmt *germ.Statement) (string, error) {
 	var joinTableSQL []string
 
 	for _, rel := range stmt.Schema.Relationships.Relations {
 		if rel.Type == schema.Many2Many && rel.JoinTable != nil {
+			fmt.Printf("Generating join table for %s and %s\n", stmt.Table, rel.FieldSchema.Table)
 			joinTable := rel.JoinTable
+
+			// Use the correct field to get the reference table
+			refTable := rel.FieldSchema.Table // Example, adjust according to your actual struct
+
 			joinFields := []string{
 				fmt.Sprintf("%s_id INTEGER NOT NULL", stmt.Table),
 				fmt.Sprintf("%s_id INTEGER NOT NULL", rel.FieldSchema.Table),
 				fmt.Sprintf("PRIMARY KEY (%s_id, %s_id)", stmt.Table, rel.FieldSchema.Table),
-				fmt.Sprintf("FOREIGN KEY (%s_id) REFERENCES %s(id)", stmt.Table, stmt.Table),
-				fmt.Sprintf("FOREIGN KEY (%s_id) REFERENCES %s(id)", rel.FieldSchema.Table, rel.FieldSchema.Table),
+				fmt.Sprintf("FOREIGN KEY (%s_id) REFERENCES %s(id) ON DELETE CASCADE", stmt.Table, refTable),
+				fmt.Sprintf("FOREIGN KEY (%s_id) REFERENCES %s(id) ON DELETE CASCADE", rel.FieldSchema.Table, refTable),
 			}
+
 			joinTableSQL = append(joinTableSQL, fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (\n %s\n);",
 				joinTable.Name, strings.Join(joinFields, ",\n ")))
 		}
