@@ -57,13 +57,15 @@ var MakeMigrationCmd = &cobra.Command{
 }
 
 func generateMigrationContent(db *germ.DB) (string, error) {
-	return GenerateMigration(db,
+	generator := NewMigrationGenerator(db)
+	return generator.GenerateMigration(
 		&models.Account{},
 		&models.Post{},
 		&models.Follower{},
 		&models.Role{},
 		&models.Like{},
-		&models.Comment{})
+		&models.Comment{},
+	)
 }
 
 func createMigrationFile(content string) error {
