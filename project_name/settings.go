@@ -15,7 +15,7 @@ type WebSocketConfig struct {
 }
 
 type SettingsStruct struct {
-	Database         config.DatabaseConfig
+	Database         shared.DatabaseConfig // Using shared.DatabaseConfig
 	Debug            bool
 	TimeZone         string
 	WebSocket        WebSocketConfig
@@ -24,42 +24,55 @@ type SettingsStruct struct {
 	AllowedOrigins   []string
 	TemplateBasePath string
 	SecretKey        string
+	LogFile          string
+	InstalledApps    []string
+	Environment      string
+	IsDevelopment    bool
 }
 
+// LoadSettings initializes application settings
 func LoadSettings() {
-	AppSettings = SettingsStruct{
-		SecretKey: os.Getenv("SECRET_KEY"),
-		Database: config.DatabaseConfig{
-			Engine:   os.Getenv("DB_ENGINE"),
-			Name:     os.Getenv("DB_NAME"),
-			User:     os.Getenv("DB_USER"),
-			Password: os.Getenv("DB_PASSWORD"),
-			Host:     os.Getenv("DB_HOST"),
-			Port:     os.Getenv("DB_PORT"),
-		},
-		Debug:    os.Getenv("DEBUG") == "true",
-		TimeZone: os.Getenv("TIME_ZONE"),
-		WebSocket: WebSocketConfig{
-			Port: os.Getenv("WS_PORT"),
-		},
-		CertFile:         os.Getenv("CERT_FILE"),
-		KeyFile:          os.Getenv("KEY_FILE"),
-		AllowedOrigins:   strings.Split(os.Getenv("ALLOWED_ORIGINS"), ","),
-		TemplateBasePath: os.Getenv("TEMPLATE_BASE_PATH"),
+	dbConfig := shared.DatabaseConfig{ // Using shared.DatabaseConfig
+		Engine:   os.Getenv("DB_ENGINE"),
+		Name:     os.Getenv("DB_NAME"),
+		User:     os.Getenv("DB_USER"),
+		Password: os.Getenv("DB_PASSWORD"),
+		Host:     os.Getenv("DB_HOST"),
+		Port:     os.Getenv("DB_PORT"),
 	}
 
-	// Set the secret key in the shared config
+	debug := os.Getenv("DEBUG") == "true"
+
+	// Initialize the shared config
 	shared.SetSecretKey(os.Getenv("SECRET_KEY"))
+	shared.SetDatabaseConfig(dbConfig) // This will work
+	shared.SetDebug(debug)
+
+	// Initialize the settings struct
+	AppSettings = SettingsStruct{
+		TemplateBasePath: os.Getenv("TEMPLATE_BASE_PATH"),
+		WebSocket:        WebSocketConfig{Port: os.Getenv("WS_PORT")},
+		AllowedOrigins:   strings.Split(os.Getenv("ALLOWED_ORIGINS"), ","),
+		CertFile:         os.Getenv("CERT_FILE"),
+		KeyFile:          os.Getenv("KEY_FILE"),
+		LogFile:          os.Getenv("LOG_FILE"),
+		Debug:            debug,
+		TimeZone:         os.Getenv("TIME_ZONE"),
+		InstalledApps:    strings.Split(os.Getenv("INSTALLED_APPS"), ","),
+		Database:         dbConfig, // Using the same shared.DatabaseConfig
+		Environment:      os.Getenv("ENVIRONMENT"),
+		IsDevelopment:    os.Getenv("ENVIRONMENT") == "development",
+	}
 
 	// Log loaded settings
 	config.LogStruct("Loaded settings", AppSettings)
 }
 
-func (s *SettingsStruct) GetDatabaseConfig() config.DatabaseConfig {
+func (s *SettingsStruct) GetDatabaseConfig() shared.DatabaseConfig {
 	return s.Database
 }
 
-func (s *SettingsStruct) SetDatabaseConfig(dbConfig config.DatabaseConfig) {
+func (s *SettingsStruct) SetDatabaseConfig(dbConfig shared.DatabaseConfig) {
 	s.Database = dbConfig
 }
 

@@ -26,7 +26,7 @@ var MigratorCmd = &cobra.Command{
 		log.Println("Initializing database connection for migration...")
 
 		// Get database URL
-		dbURL := config.GetDatabaseURL(&project_name.AppSettings)
+		dbURL := config.GetDatabaseURL()
 		if dbURL == "" {
 			log.Fatalf("Unsupported database engine: %s", project_name.AppSettings.GetDatabaseConfig().Engine)
 		}

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"sort"
 	"strings"
@@ -11,15 +12,11 @@ import (
 	"github.com/mviner000/eyymi/eyygo/germ/schema"
 )
 
-var validate *validator.Validate
-
-// InitializeValidator initializes the validator
-func InitializeValidator() {
-	validate = validator.New()
-}
-
 // GenerateMigration generates migration SQL for provided models
 func GenerateMigration(db *germ.DB, dst ...interface{}) (string, error) {
+	// Log the database type
+	log.Printf("Using database: %s", db.Name())
+
 	var upStatements []string
 	tableNames := make(map[string]bool)
 
@@ -127,7 +124,6 @@ func removeDuplicateTableDefinitions(sqlString string) string {
 }
 
 // generateCreateTableSQL generates the SQL for creating a table, including foreign key constraints
-// generateCreateTableSQL generates the SQL for creating a table, including foreign key constraints
 func generateCreateTableSQL(db *germ.DB, stmt *germ.Statement) (string, error) {
 	fields := extractFields(db, stmt)
 
@@ -170,6 +166,15 @@ func extractFields(db *germ.DB, stmt *germ.Statement) []string {
 		if fieldSQL != "" {
 			fieldStr := fmt.Sprintf("%s %s", field.DBName, fieldSQL)
 
+			// Handle AUTOINCREMENT for SQLite and AUTO_INCREMENT for MySQL
+			if field.AutoIncrement {
+				if db.Name() == "sqlite" || db.Name() == "sqlite3" {
+					fieldStr = fmt.Sprintf("%s INTEGER PRIMARY KEY AUTOINCREMENT", field.DBName)
+				} else if db.Name() == "mysql" {
+					fieldStr = fmt.Sprintf("%s INT PRIMARY KEY AUTO_INCREMENT", field.DBName)
+				}
+			}
+
 			fmt.Printf("Processing field: %s\n", field.DBName)
 
 			// Ensure NOT NULL is only added once
@@ -183,26 +188,26 @@ func extractFields(db *germ.DB, stmt *germ.Statement) []string {
 				if db.Name() == "sqlite" || db.Name() == "sqlite3" {
 					fieldStr = fmt.Sprintf("%s TEXT", field.DBName)
 				}
+			} else if db.Name() == "mysql" {
+				// Convert TEXT to VARCHAR for MySQL if needed
+				if strings.Contains(fieldSQL, "TEXT") {
+					fieldStr = fmt.Sprintf("%s VARCHAR(255)", field.DBName)
+				}
 			}
 
 			fields = append(fields, fieldStr)
 
 			// Handle foreign key constraints
-			hasForeignKey, refField := hasForeignKeyConstraint(field)
-			if hasForeignKey {
-				var refTable string
-				switch stmt.Table {
-				case "users":
-					refTable = "roles"
-				case "posts":
-					refTable = "users"
-				case "followers":
-					refTable = "users"
-				default:
-					refTable = field.TagSettings["references"]
+			if field.TagSettings["FOREIGNKEY"] != "" {
+				refTable, refField := parseTagSetting(field.TagSettings["FOREIGNKEY"])
+				if refTable == "" {
+					refTable = strings.TrimSuffix(field.DBName, "ID")
 					if refTable == "" {
-						refTable = stmt.Schema.Table
+						refTable = field.DBName
 					}
+				}
+				if refField == "" {
+					refField = "ID"
 				}
 
 				fmt.Printf("Foreign key detected for %s.%s referencing table: %s\n", stmt.Table, field.DBName, refTable)
@@ -224,6 +229,15 @@ func extractFields(db *germ.DB, stmt *germ.Statement) []string {
 	}
 
 	return fields
+}
+
+// parseTagSetting parses the FOREIGNKEY tag setting
+func parseTagSetting(tagSetting string) (string, string) {
+	parts := strings.Split(tagSetting, ":")
+	if len(parts) == 2 {
+		return parts[0], parts[1]
+	}
+	return "", ""
 }
 
 // hasForeignKeyConstraint checks if a foreign key constraint is defined for the field

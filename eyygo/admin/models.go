@@ -8,7 +8,6 @@ import (
 	"github.com/mviner000/eyymi/config"
 	"github.com/mviner000/eyymi/eyygo/fields"
 	"github.com/mviner000/eyymi/eyygo/operations"
-	"github.com/mviner000/eyymi/project_name"
 )
 
 // GetModels defines and returns all the models for the application.
@@ -32,8 +31,7 @@ func GetModels() []*operations.Model {
 // GetAllUsers returns a list of users from the database
 func GetAllUsers() []User {
 	// Use the project_name.AppSettings to get the database URL
-	dbURL := config.GetDatabaseURL(&project_name.AppSettings)
-
+	dbURL := config.GetDatabaseURL()
 	db, err := sql.Open("sqlite3", dbURL)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)

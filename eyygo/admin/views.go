@@ -12,7 +12,6 @@ import (
 	"github.com/mviner000/eyymi/config"
 	"github.com/mviner000/eyymi/eyygo/auth"
 	"github.com/mviner000/eyymi/eyygo/http"
-	"github.com/mviner000/eyymi/project_name"
 )
 
 var db *sql.DB
@@ -28,7 +27,7 @@ var tokenGenerator *auth.PasswordResetTokenGenerator
 
 func init() {
 	var err error
-	dbURL := config.GetDatabaseURL(&project_name.AppSettings)
+	dbURL := config.GetDatabaseURL()
 	db, err = sql.Open("sqlite3", dbURL)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)

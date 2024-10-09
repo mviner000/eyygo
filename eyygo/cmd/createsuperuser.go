@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/mviner000/eyymi/config"
-	"github.com/mviner000/eyymi/project_name"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -35,7 +34,7 @@ type User struct {
 }
 
 func createSuperuser() {
-	dbURL := config.GetDatabaseURL(&project_name.AppSettings)
+	dbURL := config.GetDatabaseURL()
 
 	db, err := sql.Open("sqlite3", dbURL)
 	if err != nil {

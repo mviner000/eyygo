@@ -1,12 +1,18 @@
+// config/settings_types.go
+
 package config
 
+import "github.com/mviner000/eyymi/eyygo/shared"
+
+// Debuggable interface for debug settings
 type Debuggable interface {
 	IsDebug() bool
 }
 
+// Config interface for accessing configuration
 type Config interface {
-	GetDatabaseConfig() DatabaseConfig
-	SetDatabaseConfig(DatabaseConfig)
+	GetDatabaseConfig() shared.DatabaseConfig // Use shared.DatabaseConfig
+	SetDatabaseConfig(shared.DatabaseConfig)  // Use shared.DatabaseConfig
 	IsDebug() bool
 	SetDebug(bool)
 }
@@ -39,7 +45,7 @@ type SettingsStruct struct {
 	Debug                   bool
 	TimeZone                string
 	InstalledApps           []string
-	Database                DatabaseConfig
+	Database                shared.DatabaseConfig // Use shared.DatabaseConfig
 	Environment             string
 	IsDevelopment           bool
 }

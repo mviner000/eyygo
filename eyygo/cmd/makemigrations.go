@@ -22,7 +22,7 @@ var MakeMigrationCmd = &cobra.Command{
 		log.Println("Creating new migration file...")
 
 		// Get database URL
-		dbURL := config.GetDatabaseURL(&project_name.AppSettings)
+		dbURL := config.GetDatabaseURL()
 		if dbURL == "" {
 			log.Fatalf("Unsupported database engine: %s", project_name.AppSettings.GetDatabaseConfig().Engine)
 		}
@@ -57,9 +57,13 @@ var MakeMigrationCmd = &cobra.Command{
 }
 
 func generateMigrationContent(db *germ.DB) (string, error) {
-	// Use GERM to generate migration content for all models
-	return GenerateMigration(db, &models.User{}, &models.Post{}, &models.Follower{}, &models.Role{}, &models.Like{})
-	// return GenerateMigration(db, &models.Borrower{}, &models.Book{}, &models.Author{}, &models.Rental{}, &models.Category{})
+	return GenerateMigration(db,
+		&models.Account{},
+		&models.Post{},
+		&models.Follower{},
+		&models.Role{},
+		&models.Like{},
+		&models.Comment{})
 }
 
 func createMigrationFile(content string) error {
