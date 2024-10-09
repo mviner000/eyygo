@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"bufio"
+	"fmt"
+	"io/ioutil"
 	"log"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -77,10 +77,13 @@ func applyMigrations(db *germ.DB) error {
 	for _, file := range migrationFiles {
 		log.Printf("Applying migration: %s", file)
 
-		content, err := os.ReadFile(file)
+		content, err := ioutil.ReadFile(file)
 		if err != nil {
 			return err
 		}
+
+		// Debug: Print entire content of migration file
+		log.Printf("Migration file content:\n%s", string(content))
 
 		upStatements, _, err := parseMigrationFile(string(content))
 		if err != nil {
@@ -88,8 +91,9 @@ func applyMigrations(db *germ.DB) error {
 		}
 
 		for _, stmt := range upStatements {
+			log.Printf("Executing statement:\n%s", stmt)
 			if err := db.Exec(stmt).Error; err != nil {
-				return err
+				return fmt.Errorf("error executing statement: %v\nStatement: %s", err, stmt)
 			}
 		}
 	}
@@ -117,10 +121,13 @@ func rollbackMigrations(db *germ.DB, steps int) error {
 
 		log.Printf("Rolling back migration: %s", file)
 
-		content, err := os.ReadFile(file)
+		content, err := ioutil.ReadFile(file)
 		if err != nil {
 			return err
 		}
+
+		// Debug: Print entire content of migration file
+		log.Printf("Migration file content:\n%s", string(content))
 
 		_, downStatements, err := parseMigrationFile(string(content))
 		if err != nil {
@@ -128,8 +135,9 @@ func rollbackMigrations(db *germ.DB, steps int) error {
 		}
 
 		for _, stmt := range downStatements {
+			log.Printf("Executing statement:\n%s", stmt)
 			if err := db.Exec(stmt).Error; err != nil {
-				return err
+				return fmt.Errorf("error executing statement: %v\nStatement: %s", err, stmt)
 			}
 		}
 	}
@@ -140,25 +148,37 @@ func rollbackMigrations(db *germ.DB, steps int) error {
 func parseMigrationFile(content string) ([]string, []string, error) {
 	var upStatements, downStatements []string
 	var currentSection string
+	var currentStatement strings.Builder
 
-	scanner := bufio.NewScanner(strings.NewReader(content))
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "-- +migrate Up" {
+	lines := strings.Split(content, "\n")
+	for _, line := range lines {
+		trimmedLine := strings.TrimSpace(line)
+		if trimmedLine == "-- +migrate Up" {
 			currentSection = "up"
-		} else if line == "-- +migrate Down" {
+		} else if trimmedLine == "-- +migrate Down" {
 			currentSection = "down"
-		} else if line != "" && !strings.HasPrefix(line, "--") {
-			if currentSection == "up" {
-				upStatements = append(upStatements, line)
-			} else if currentSection == "down" {
-				downStatements = append(downStatements, line)
+		} else if trimmedLine != "" && !strings.HasPrefix(trimmedLine, "--") {
+			currentStatement.WriteString(line + "\n")
+			if strings.HasSuffix(trimmedLine, ";") {
+				statement := strings.TrimSpace(currentStatement.String())
+				if currentSection == "up" {
+					upStatements = append(upStatements, statement)
+				} else if currentSection == "down" {
+					downStatements = append(downStatements, statement)
+				}
+				currentStatement.Reset()
 			}
 		}
 	}
 
-	if err := scanner.Err(); err != nil {
-		return nil, nil, err
+	// Handle any remaining statement without a semicolon
+	if currentStatement.Len() > 0 {
+		statement := strings.TrimSpace(currentStatement.String())
+		if currentSection == "up" {
+			upStatements = append(upStatements, statement)
+		} else if currentSection == "down" {
+			downStatements = append(downStatements, statement)
+		}
 	}
 
 	return upStatements, downStatements, nil

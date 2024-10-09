@@ -10,8 +10,8 @@ import (
 	"github.com/mviner000/eyymi/config"
 	"github.com/mviner000/eyymi/eyygo/germ"
 	"github.com/mviner000/eyymi/eyygo/germ/driver/sqlite"
-	models "github.com/mviner000/eyymi/eyygo/post"
 	"github.com/mviner000/eyymi/project_name"
+	models "github.com/mviner000/eyymi/project_name/posts"
 	"github.com/spf13/cobra"
 )
 

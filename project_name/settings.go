@@ -2,10 +2,11 @@ package project_name
 
 import (
 	"os"
-	"strings"
+	"path/filepath"
 
 	"github.com/mviner000/eyymi/config"
 	"github.com/mviner000/eyymi/eyygo/shared"
+	"github.com/mviner000/eyymi/eyygo/utils"
 )
 
 var AppSettings SettingsStruct
@@ -15,7 +16,7 @@ type WebSocketConfig struct {
 }
 
 type SettingsStruct struct {
-	Database         shared.DatabaseConfig // Using shared.DatabaseConfig
+	Database         shared.DatabaseConfig
 	Debug            bool
 	TimeZone         string
 	WebSocket        WebSocketConfig
@@ -30,9 +31,14 @@ type SettingsStruct struct {
 	IsDevelopment    bool
 }
 
+// Helper function to create app paths
+func createAppPaths(apps []string) []string {
+	return append([]string{}, apps...)
+}
+
 // LoadSettings initializes application settings
 func LoadSettings() {
-	dbConfig := shared.DatabaseConfig{ // Using shared.DatabaseConfig
+	dbConfig := shared.DatabaseConfig{
 		Engine:   os.Getenv("DB_ENGINE"),
 		Name:     os.Getenv("DB_NAME"),
 		User:     os.Getenv("DB_USER"),
@@ -40,26 +46,37 @@ func LoadSettings() {
 		Host:     os.Getenv("DB_HOST"),
 		Port:     os.Getenv("DB_PORT"),
 	}
-
 	debug := os.Getenv("DEBUG") == "true"
 
 	// Initialize the shared config
 	shared.SetSecretKey(os.Getenv("SECRET_KEY"))
-	shared.SetDatabaseConfig(dbConfig) // This will work
+	shared.SetDatabaseConfig(dbConfig)
 	shared.SetDebug(debug)
+
+	// Get project root
+	projectRoot := utils.GetProjectRoot(debug)
+
+	// Define INSTALLED_APPS with the new structure
+	installedApps := createAppPaths([]string{
+		"eyygo.admin",
+		"eyygo.sessions",
+		"eyygo.auth",
+		"eyygo.contenttypes",
+		"project_name.posts",
+	})
 
 	// Initialize the settings struct
 	AppSettings = SettingsStruct{
-		TemplateBasePath: os.Getenv("TEMPLATE_BASE_PATH"),
+		TemplateBasePath: filepath.Join(projectRoot, os.Getenv("TEMPLATE_BASE_PATH")),
+		InstalledApps:    installedApps,
 		WebSocket:        WebSocketConfig{Port: os.Getenv("WS_PORT")},
-		AllowedOrigins:   strings.Split(os.Getenv("ALLOWED_ORIGINS"), ","),
-		CertFile:         os.Getenv("CERT_FILE"),
-		KeyFile:          os.Getenv("KEY_FILE"),
-		LogFile:          os.Getenv("LOG_FILE"),
+		AllowedOrigins:   []string{os.Getenv("ALLOWED_ORIGINS")},
+		CertFile:         filepath.Join(projectRoot, os.Getenv("CERT_FILE")),
+		KeyFile:          filepath.Join(projectRoot, os.Getenv("KEY_FILE")),
+		LogFile:          filepath.Join(projectRoot, os.Getenv("LOG_FILE")),
 		Debug:            debug,
 		TimeZone:         os.Getenv("TIME_ZONE"),
-		InstalledApps:    strings.Split(os.Getenv("INSTALLED_APPS"), ","),
-		Database:         dbConfig, // Using the same shared.DatabaseConfig
+		Database:         dbConfig,
 		Environment:      os.Getenv("ENVIRONMENT"),
 		IsDevelopment:    os.Getenv("ENVIRONMENT") == "development",
 	}
