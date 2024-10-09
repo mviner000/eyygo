@@ -47,11 +47,12 @@ var MakeMigrationCmd = &cobra.Command{
 		}
 
 		// Create migration file
-		err = createMigrationFile(migrationContent)
+		filename, err := createMigrationFile(migrationContent)
 		if err != nil {
 			log.Fatalf("Failed to create migration file: %v", err)
 		}
 
+		log.Printf("Migrations for 'posts':\nposts/migrations/%s", filename)
 		log.Println("Migration file created successfully.")
 	},
 }
@@ -68,15 +69,20 @@ func generateMigrationContent(db *germ.DB) (string, error) {
 	)
 }
 
-func createMigrationFile(content string) error {
+func createMigrationFile(content string) (string, error) {
 	timestamp := time.Now().Format("20060102150405")
 	filename := fmt.Sprintf("%s_migration.sql", timestamp)
+	migrationsDir := filepath.Join("project_name", "posts", "migrations")
 
-	migrationsDir := "migrations"
 	if err := os.MkdirAll(migrationsDir, os.ModePerm); err != nil {
-		return err
+		return "", err
 	}
 
 	filePath := filepath.Join(migrationsDir, filename)
-	return os.WriteFile(filePath, []byte(content), 0644)
+	err := os.WriteFile(filePath, []byte(content), 0644)
+	if err != nil {
+		return "", err
+	}
+
+	return filename, nil
 }

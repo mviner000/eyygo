@@ -67,9 +67,14 @@ func init() {
 	MigratorCmd.Flags().IntVarP(&steps, "steps", "s", 1, "Number of migrations to roll back")
 }
 
+// Helper function to get migration files
+func getMigrationFiles() ([]string, error) {
+	migrationsDir := filepath.Join("project_name", "posts", "migrations")
+	return filepath.Glob(filepath.Join(migrationsDir, "*.sql"))
+}
+
 func applyMigrations(db *germ.DB) error {
-	migrationsDir := "migrations"
-	migrationFiles, err := filepath.Glob(filepath.Join(migrationsDir, "*.sql"))
+	migrationFiles, err := getMigrationFiles()
 	if err != nil {
 		return err
 	}
@@ -102,8 +107,7 @@ func applyMigrations(db *germ.DB) error {
 }
 
 func rollbackMigrations(db *germ.DB, steps int) error {
-	migrationsDir := "migrations"
-	migrationFiles, err := filepath.Glob(filepath.Join(migrationsDir, "*.sql"))
+	migrationFiles, err := getMigrationFiles()
 	if err != nil {
 		return err
 	}

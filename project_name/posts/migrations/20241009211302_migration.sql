@@ -24,6 +24,16 @@ CREATE TABLE IF NOT EXISTS posts (
  CONSTRAINT fk_posts_account_id FOREIGN KEY (account_id) REFERENCES accounts(ID) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS likes (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ post_id integer NOT NULL,
+ account_id integer NOT NULL,
+ created_at TEXT,
+ updated_at TEXT,
+ CONSTRAINT fk_likes_post_id FOREIGN KEY (post_id) REFERENCES posts(ID) ON DELETE CASCADE,
+ CONSTRAINT fk_likes_account_id FOREIGN KEY (account_id) REFERENCES accounts(ID) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS comments (
  id INTEGER PRIMARY KEY AUTOINCREMENT,
  post_id integer NOT NULL,
@@ -45,20 +55,10 @@ CREATE TABLE IF NOT EXISTS followers (
  CONSTRAINT fk_followers_follower_id FOREIGN KEY (follower_id) REFERENCES accounts(ID) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS likes (
- id INTEGER PRIMARY KEY AUTOINCREMENT,
- post_id integer NOT NULL,
- account_id integer NOT NULL,
- created_at TEXT,
- updated_at TEXT,
- CONSTRAINT fk_likes_post_id FOREIGN KEY (post_id) REFERENCES posts(ID) ON DELETE CASCADE,
- CONSTRAINT fk_likes_account_id FOREIGN KEY (account_id) REFERENCES accounts(ID) ON DELETE CASCADE
-);
-
 -- +migrate Down
-DROP TABLE IF EXISTS likes;
 DROP TABLE IF EXISTS followers;
 DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS likes;
 DROP TABLE IF EXISTS posts;
 DROP TABLE IF EXISTS accounts;
 DROP TABLE IF EXISTS roles;
