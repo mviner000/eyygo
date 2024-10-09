@@ -10,8 +10,10 @@ import (
 	"github.com/mviner000/eyymi/config"
 	"github.com/mviner000/eyymi/eyygo/germ"
 	"github.com/mviner000/eyymi/eyygo/germ/driver/sqlite"
+	"github.com/mviner000/eyymi/eyygo/registry"
 	"github.com/mviner000/eyymi/project_name"
 	models "github.com/mviner000/eyymi/project_name/posts"
+
 	"github.com/spf13/cobra"
 )
 
@@ -19,6 +21,9 @@ var MakeMigrationCmd = &cobra.Command{
 	Use:   "makemigrations",
 	Short: "Create a new migration file",
 	Run: func(cmd *cobra.Command, args []string) {
+
+		models.RegisterModels() // Registering models
+
 		log.Println("Creating new migration file...")
 
 		// Get database URL
@@ -59,14 +64,36 @@ var MakeMigrationCmd = &cobra.Command{
 
 func generateMigrationContent(db *germ.DB) (string, error) {
 	generator := NewMigrationGenerator(db)
-	return generator.GenerateMigration(
-		&models.Account{},
-		&models.Post{},
-		&models.Follower{},
-		&models.Role{},
-		&models.Like{},
-		&models.Comment{},
-	)
+
+	// Retrieve all registered model names from the registry
+	modelNames := registry.GetRegisteredModelNames()
+
+	if len(modelNames) == 0 {
+		log.Println("[WARN] No models registered for migration.")
+		return "", fmt.Errorf("no registered models found")
+	}
+
+	// Convert []string to []interface{} for the migration generator
+	var modelInterfaces []interface{}
+	for _, name := range modelNames {
+		// Retrieve the actual model instances using registry
+		model, ok := registry.GetRegisteredModel(name) // Assuming you have this method to get the model by name
+		if !ok {
+			log.Printf("[WARN] Model %s not found in registry.\n", name)
+			continue
+		}
+
+		modelInterfaces = append(modelInterfaces, model)
+		log.Printf("[INFO] Found model for migration: %s\n", name) // Log found models
+	}
+
+	if len(modelInterfaces) == 0 {
+		log.Println("[WARN] No valid models found for migration.")
+		return "", fmt.Errorf("no valid models found for migration")
+	}
+
+	// Now pass modelInterfaces to the GenerateMigration method
+	return generator.GenerateMigration(modelInterfaces...)
 }
 
 func createMigrationFile(content string) (string, error) {

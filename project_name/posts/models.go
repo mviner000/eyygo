@@ -1,8 +1,26 @@
 package models
 
 import (
+	"fmt"
 	"time"
+
+	"github.com/mviner000/eyymi/eyygo/registry" // Update to your actual project path
 )
+
+// Register models in a single call
+func RegisterModels() {
+	models := map[string]interface{}{
+		"Role":     &Role{},
+		"Account":  &Account{},
+		"Post":     &Post{},
+		"Comment":  &Comment{},
+		"Follower": &Follower{},
+		"Like":     &Like{},
+	}
+
+	fmt.Println(registry.GetRegisteredModels())
+	registry.RegisterModels(models)
+}
 
 // Role represents user roles such as admin, user, etc.
 type Role struct {

@@ -137,43 +137,6 @@ func (mg *MigrationGenerator) priorityAwareSort() ([]string, error) {
 	return append(noDeps, withDeps...), nil
 }
 
-func (mg *MigrationGenerator) topologicalSort() ([]string, error) {
-	var sorted []string
-	visited := make(map[string]bool)
-	var visit func(string) error
-
-	visit = func(name string) error {
-		if visited[name] {
-			return nil
-		}
-		if mg.tables[name] == nil {
-			return fmt.Errorf("unknown table: %s", name)
-		}
-		visited[name] = true
-		for _, dep := range mg.tables[name].Dependencies {
-			if err := visit(dep); err != nil {
-				return err
-			}
-		}
-		sorted = append(sorted, name)
-		return nil
-	}
-
-	for name := range mg.tables {
-		if err := visit(name); err != nil {
-			return nil, err
-		}
-	}
-
-	// Reverse the slice to get the correct order
-	for i := 0; i < len(sorted)/2; i++ {
-		j := len(sorted) - 1 - i
-		sorted[i], sorted[j] = sorted[j], sorted[i]
-	}
-
-	return sorted, nil
-}
-
 func (mg *MigrationGenerator) extractJoinTableNames(sql string) []string {
 	re := regexp.MustCompile(`CREATE TABLE IF NOT EXISTS (\w+)`)
 	matches := re.FindAllStringSubmatch(sql, -1)
