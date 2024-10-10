@@ -97,16 +97,37 @@ func generateMigrationContent(db *germ.DB) (string, error) {
 }
 
 func createMigrationFile(content string) (string, error) {
-	timestamp := time.Now().Format("20060102150405")
-	filename := fmt.Sprintf("%s_migration.sql", timestamp)
 	migrationsDir := filepath.Join("project_name", "posts", "migrations")
 
 	if err := os.MkdirAll(migrationsDir, os.ModePerm); err != nil {
 		return "", err
 	}
 
+	files, err := os.ReadDir(migrationsDir)
+	if err != nil {
+		return "", err
+	}
+
+	var nextNumber int
+	var filename string
+
+	if len(files) == 0 {
+		// This is the first migration
+		nextNumber = 1
+		filename = "0001_initial.sql"
+	} else {
+		// Find the highest existing migration number
+		for _, f := range files {
+			if n, _ := fmt.Sscanf(f.Name(), "%04d_", &nextNumber); n == 1 {
+				nextNumber++ // Increment for the next migration
+			}
+		}
+		timestamp := time.Now().Format("20060102_1504")
+		filename = fmt.Sprintf("%04d_auto_%s.sql", nextNumber, timestamp)
+	}
+
 	filePath := filepath.Join(migrationsDir, filename)
-	err := os.WriteFile(filePath, []byte(content), 0644)
+	err = os.WriteFile(filePath, []byte(content), 0644)
 	if err != nil {
 		return "", err
 	}
