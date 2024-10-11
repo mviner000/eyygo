@@ -11,7 +11,7 @@ import (
 	"github.com/gofiber/template/html/v2"
 	"github.com/gofiber/websocket/v2"
 
-	"github.com/mviner000/eyymi/config"
+	"github.com/mviner000/eyymi/eyygo/config"
 	"github.com/mviner000/eyymi/eyygo/constants"
 	"github.com/mviner000/eyymi/eyygo/core/decorators"
 	"github.com/mviner000/eyymi/eyygo/reverb"

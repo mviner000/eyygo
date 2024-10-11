@@ -9,7 +9,7 @@ import (
 	"sort"
 
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/mviner000/eyymi/config"
+	"github.com/mviner000/eyymi/eyygo/config"
 	"github.com/spf13/cobra"
 )
 

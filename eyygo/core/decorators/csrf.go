@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/mviner000/eyymi/config"
+	"github.com/mviner000/eyymi/eyygo/config"
 	"github.com/mviner000/eyymi/project_name"
 )
 

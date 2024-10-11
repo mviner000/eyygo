@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/mviner000/eyymi/config"
+	"github.com/mviner000/eyymi/eyygo/config"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )

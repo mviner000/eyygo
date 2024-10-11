@@ -7,11 +7,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/mviner000/eyymi/config"
+	conf "github.com/mviner000/eyymi/eyygo"
+	"github.com/mviner000/eyymi/eyygo/config"
 	"github.com/mviner000/eyymi/eyygo/germ"
 	"github.com/mviner000/eyymi/eyygo/germ/driver/sqlite"
 	"github.com/mviner000/eyymi/eyygo/registry"
-	"github.com/mviner000/eyymi/project_name"
 	models "github.com/mviner000/eyymi/project_name/posts"
 
 	"github.com/spf13/cobra"
@@ -29,7 +29,7 @@ var MakeMigrationCmd = &cobra.Command{
 		// Get database URL
 		dbURL := config.GetDatabaseURL()
 		if dbURL == "" {
-			log.Fatalf("Unsupported database engine: %s", project_name.AppSettings.GetDatabaseConfig().Engine)
+			log.Fatalf("Unsupported database engine: %s", conf.GetSettings().GetDatabaseConfig().Engine)
 		}
 
 		// Initialize database

@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/mviner000/eyymi/config"
+	"github.com/mviner000/eyymi/eyygo/config"
 	"github.com/mviner000/eyymi/eyygo/germ"
 	"github.com/mviner000/eyymi/eyygo/germ/driver/sqlite"
 	"github.com/mviner000/eyymi/project_name"

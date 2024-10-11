@@ -9,8 +9,8 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/session"
 	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/mviner000/eyymi/config"
 	"github.com/mviner000/eyymi/eyygo/auth"
+	"github.com/mviner000/eyymi/eyygo/config"
 	"github.com/mviner000/eyymi/eyygo/http"
 )
 

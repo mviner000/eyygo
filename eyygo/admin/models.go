@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/mviner000/eyymi/config"
+	"github.com/mviner000/eyymi/eyygo/config"
 	"github.com/mviner000/eyymi/eyygo/fields"
 	"github.com/mviner000/eyymi/eyygo/operations"
 )
@@ -30,7 +30,6 @@ func GetModels() []*operations.Model {
 
 // GetAllUsers returns a list of users from the database
 func GetAllUsers() []User {
-	// Use the project_name.AppSettings to get the database URL
 	dbURL := config.GetDatabaseURL()
 	db, err := sql.Open("sqlite3", dbURL)
 	if err != nil {
