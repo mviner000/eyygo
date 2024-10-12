@@ -69,7 +69,7 @@ func init() {
 
 // Helper function to get migration files
 func getMigrationFiles() ([]string, error) {
-	migrationsDir := filepath.Join("project_name", "posts", "migrations")
+	migrationsDir := filepath.Join("project_name", "models", "migrations")
 	return filepath.Glob(filepath.Join(migrationsDir, "*.sql"))
 }
 

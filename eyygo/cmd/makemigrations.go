@@ -12,7 +12,7 @@ import (
 	"github.com/mviner000/eyymi/eyygo/germ"
 	"github.com/mviner000/eyymi/eyygo/germ/driver/sqlite"
 	"github.com/mviner000/eyymi/eyygo/registry"
-	models "github.com/mviner000/eyymi/project_name/posts"
+	models "github.com/mviner000/eyymi/project_name/models"
 
 	"github.com/spf13/cobra"
 )
@@ -57,7 +57,7 @@ var MakeMigrationCmd = &cobra.Command{
 			log.Fatalf("Failed to create migration file: %v", err)
 		}
 
-		log.Printf("Migrations for 'posts':\nposts/migrations/%s", filename)
+		log.Printf("Migrations:\nmodels/migrations/%s", filename)
 		log.Println("Migration file created successfully.")
 	},
 }
@@ -97,7 +97,7 @@ func generateMigrationContent(db *germ.DB) (string, error) {
 }
 
 func createMigrationFile(content string) (string, error) {
-	migrationsDir := filepath.Join("project_name", "posts", "migrations")
+	migrationsDir := filepath.Join("project_name", "models", "migrations")
 
 	if err := os.MkdirAll(migrationsDir, os.ModePerm); err != nil {
 		return "", err
