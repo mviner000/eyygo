@@ -8,7 +8,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 
-	models "github.com/mviner000/eyymi/project_name/posts" // Update with the correct import path
+	models "github.com/mviner000/eyymi/eyygo/admin/models"
 )
 
 var db *gorm.DB
@@ -111,11 +111,15 @@ func GetSessionFromDB(c *fiber.Ctx) (uint, string, error) {
 
 // DeleteSessionFromDB deletes a session from the database.
 func DeleteSessionFromDB(sessionID string) error {
-	err := db.Where("session_key = ?", sessionID).Delete(&struct{}{}).Error
-	if err != nil {
-		log.Printf("Error deleting session %s from database: %v", sessionID, err)
-		return err
+	result := db.Table("eyygo_session").Where("session_key = ?", sessionID).Delete(&models.Session{})
+	if result.Error != nil {
+		log.Printf("Error deleting session %s from database: %v", sessionID, result.Error)
+		return fmt.Errorf("failed to delete session: %w", result.Error)
 	}
-	log.Printf("Session %s deleted successfully from database", sessionID)
+	if result.RowsAffected == 0 {
+		log.Printf("No session found with ID %s", sessionID)
+		return fmt.Errorf("no session found with ID %s", sessionID)
+	}
+	log.Printf("Session %s deleted successfully from database. Rows affected: %d", sessionID, result.RowsAffected)
 	return nil
 }

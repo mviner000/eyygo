@@ -9,8 +9,8 @@ import (
 	"syscall"
 	"time"
 
+	models "github.com/mviner000/eyymi/eyygo/admin/models"
 	"github.com/mviner000/eyymi/eyygo/config"
-	models "github.com/mviner000/eyymi/project_name/posts"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 	"gorm.io/gorm"

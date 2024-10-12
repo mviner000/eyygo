@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
+	models "github.com/mviner000/eyymi/eyygo/admin/models"
 	"github.com/mviner000/eyymi/eyygo/shared"
-	models "github.com/mviner000/eyymi/project_name/posts"
 )
 
 // Configuration constants

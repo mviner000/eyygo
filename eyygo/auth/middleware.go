@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	models "github.com/mviner000/eyymi/eyygo/admin/models"
 	"github.com/mviner000/eyymi/eyygo/config"
-	models "github.com/mviner000/eyymi/project_name/posts"
 	"gorm.io/gorm"
 )
 

@@ -3,8 +3,8 @@ package project_name
 import (
 	"fmt"
 
+	models "github.com/mviner000/eyymi/eyygo/admin/models"
 	"github.com/mviner000/eyymi/eyygo/registry"
-	models "github.com/mviner000/eyymi/project_name/posts"
 )
 
 // Register models in a single call
