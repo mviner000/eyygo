@@ -8,6 +8,8 @@ import (
 	"github.com/mviner000/eyymi/eyygo/config"
 	"github.com/mviner000/eyymi/eyygo/fields"
 	"github.com/mviner000/eyymi/eyygo/operations"
+
+	models "github.com/mviner000/eyymi/project_name/posts"
 )
 
 // GetModels defines and returns all the models for the application.
@@ -29,7 +31,7 @@ func GetModels() []*operations.Model {
 }
 
 // GetAllUsers returns a list of users from the database
-func GetAllUsers() []User {
+func GetAllUsers() []models.AuthUser {
 	dbURL := config.GetDatabaseURL()
 	db, err := sql.Open("sqlite3", dbURL)
 	if err != nil {
@@ -43,9 +45,9 @@ func GetAllUsers() []User {
 	}
 	defer rows.Close()
 
-	var users []User
+	var users []models.AuthUser
 	for rows.Next() {
-		var user User
+		var user models.AuthUser
 		if err := rows.Scan(&user.Username, &user.Email); err != nil {
 			log.Fatalf("Failed to scan user row: %v", err)
 		}

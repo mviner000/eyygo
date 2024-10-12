@@ -5,9 +5,9 @@ import (
 )
 
 type AuthUser struct {
-	ID               uint   `germ:"primaryKey;autoIncrement"` // Primary key with auto-increment
+	ID               uint   `germ:"primaryKey;autoIncrement"`
 	Password         string `germ:"not null"`
-	LastLogin        *time.Time
+	LastLogin        time.Time
 	IsSuperuser      bool      `germ:"not null"`
 	Username         string    `germ:"unique;not null"`
 	FirstName        string    `germ:"default:''"`
@@ -44,20 +44,20 @@ type EyygoContentType struct {
 }
 
 type Session struct {
-	SessionKey string    `germ:"primaryKey;type:TEXT"` // Use TEXT for session key
+	SessionKey string    `germ:"primaryKey;type:TEXT"`
 	ExpireDate time.Time `germ:"not null;index"`
-	UserID     uint      `germ:"not null"`                        // Foreign key to AuthUser.ID
-	User       AuthUser  `germ:"foreignKey:UserID;references:ID"` // Define the foreign key correctly
+	UserID     uint      `germ:"not null"`
+	User       AuthUser  `germ:"foreignKey:UserID;references:ID"`
 	AuthToken  string    `germ:"not null"`
 }
 
 type AdminLog struct {
 	ID            uint              `germ:"primaryKey;autoIncrement"`
-	ActionTime    time.Time         `germ:"not null;default:CURRENT_TIMESTAMP"` // Auto-set timestamp
-	ObjectID      string            `germ:"size:255"`                           // Optional field for object identifier
-	ObjectRepr    string            `germ:"not null;size:200"`                  // Representation of the object
-	ActionFlag    int               `germ:"not null"`                           // Action flag as an integer
-	ChangeMessage string            `germ:"not null"`                           // Change message
+	ActionTime    time.Time         `germ:"not null;default:CURRENT_TIMESTAMP"`
+	ObjectID      string            `germ:"size:255"`
+	ObjectRepr    string            `germ:"not null;size:200"`
+	ActionFlag    int               `germ:"not null"`
+	ChangeMessage string            `germ:"not null"`
 	ContentTypeID *uint             // Foreign key to EyygoContentType.ID (nullable)
 	ContentType   *EyygoContentType `germ:"foreignKey:ContentTypeID;references:ID;onDelete:SET NULL"`
 	UserID        uint              // Foreign key to AuthUser.ID

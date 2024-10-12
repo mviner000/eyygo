@@ -5,10 +5,12 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
 	"github.com/mviner000/eyymi/eyygo/shared"
+	models "github.com/mviner000/eyymi/project_name/posts"
 )
 
 // Configuration constants
@@ -30,39 +32,37 @@ func NewPasswordResetTokenGenerator() *PasswordResetTokenGenerator {
 }
 
 // MakeToken generates a token for the given user.
-func (g *PasswordResetTokenGenerator) MakeToken(user *User) (string, error) {
+func (g *PasswordResetTokenGenerator) MakeToken(user *models.AuthUser) (string, error) {
 	if user == nil {
 		return "", fmt.Errorf("cannot generate token for nil user")
 	}
-
 	timestamp := time.Now().Unix()
 	token := g.makeTokenWithTimestamp(user, timestamp)
 	return token, nil
 }
 
 // CheckToken verifies the validity of the token for the given user.
-func (g *PasswordResetTokenGenerator) CheckToken(user *User, token string) bool {
+func (g *PasswordResetTokenGenerator) CheckToken(user *models.AuthUser, token string) bool {
 	parts := strings.Split(token, "-")
 	if len(parts) != 2 {
 		return false
 	}
-
 	tsStr := parts[0]
 	ts, err := base36ToInt(tsStr)
 	if err != nil {
 		return false
 	}
-
 	if time.Now().Unix()-int64(ts) > passwordResetTimeout {
 		return false
 	}
-
 	expectedToken := g.makeTokenWithTimestamp(user, int64(ts))
+
+	log.Printf("Token check: User ID: %d, Timestamp: %d, Expected Token: %s, Received Token: %s", user.ID, ts, expectedToken, token)
 	return constantTimeCompare(expectedToken, token)
 }
 
 // makeTokenWithTimestamp creates a token using a timestamp.
-func (g *PasswordResetTokenGenerator) makeTokenWithTimestamp(user *User, timestamp int64) string {
+func (g *PasswordResetTokenGenerator) makeTokenWithTimestamp(user *models.AuthUser, timestamp int64) string {
 	tsB36 := intToBase36(int(timestamp))
 	hashValue := g.makeHashValue(user, timestamp)
 	hashString := g.saltedHMAC(keySalt, hashValue, g.secret)
@@ -71,7 +71,7 @@ func (g *PasswordResetTokenGenerator) makeTokenWithTimestamp(user *User, timesta
 }
 
 // makeHashValue generates a hash value based on user details and timestamp.
-func (g *PasswordResetTokenGenerator) makeHashValue(user *User, timestamp int64) string {
+func (g *PasswordResetTokenGenerator) makeHashValue(user *models.AuthUser, timestamp int64) string {
 	return fmt.Sprintf("%d%s%d%s", user.ID, user.Password, timestamp, user.Email)
 }
 

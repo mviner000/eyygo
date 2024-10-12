@@ -1,53 +1,38 @@
 package auth
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
-	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"gorm.io/gorm"
+
+	models "github.com/mviner000/eyymi/project_name/posts" // Update with the correct import path
 )
 
-var db *sql.DB
+var db *gorm.DB
 
-func InitDB(database *sql.DB) {
+func InitDB(database *gorm.DB) {
 	db = database
 }
 
-func (u *User) ToAuthUser() *User {
-	return &User{
-		ID:        u.ID,
-		Username:  u.Username,
-		Email:     u.Email,
-		Password:  u.Password,
-		LastLogin: u.LastLogin,
-	}
-}
-
-// getUserByUsername retrieves a user from the database by username.
-func GetUserByUsername(username string) (*User, error) {
-	var user User
-	var lastLogin sql.NullTime
-	query := "SELECT id, username, email, password, last_login FROM auth_user WHERE username = ?"
-	err := db.QueryRow(query, username).Scan(&user.ID, &user.Username, &user.Email, &user.Password, &lastLogin)
+// GetUserByUsername retrieves a user from the database by username.
+func GetUserByUsername(username string) (*models.AuthUser, error) {
+	var user models.AuthUser
+	err := db.Where("username = ?", username).First(&user).Error
 	if err != nil {
 		log.Printf("Error retrieving user %s from database: %v", username, err)
 		return nil, err
 	}
-	if lastLogin.Valid {
-		user.LastLogin = lastLogin.Time
-	} else {
-		user.LastLogin = time.Time{} // Set to zero time if NULL
-	}
+
 	log.Printf("User %s retrieved successfully from database", username)
 	return &user, nil
 }
 
-// updateLastLogin updates the last login timestamp for a user in the database.
-func UpdateLastLogin(userID int) error {
-	_, err := db.Exec("UPDATE auth_user SET last_login = ? WHERE id = ?", time.Now(), userID)
+// UpdateLastLogin updates the last login timestamp for a user in the database.
+func UpdateLastLogin(userID uint) error {
+	err := db.Model(&models.AuthUser{}).Where("id = ?", userID).Update("last_login", time.Now()).Error
 	if err != nil {
 		log.Printf("Error updating last_login for user ID %d: %v", userID, err)
 	} else {
@@ -56,105 +41,77 @@ func UpdateLastLogin(userID int) error {
 	return err
 }
 
-func GetAllUsers() ([]User, error) {
-	query := "SELECT id, username, email, last_login FROM auth_user"
-	rows, err := db.Query(query)
+// GetAllUsers retrieves all users from the database.
+func GetAllUsers() ([]models.AuthUser, error) {
+	var users []models.AuthUser
+	err := db.Find(&users).Error
 	if err != nil {
 		return nil, err
-	}
-	defer rows.Close()
-
-	var users []User
-	for rows.Next() {
-		var user User
-		var lastLogin sql.NullTime
-		err := rows.Scan(&user.ID, &user.Username, &user.Email, &lastLogin)
-		if err != nil {
-			return nil, err
-		}
-		if lastLogin.Valid {
-			user.LastLogin = lastLogin.Time
-		}
-		users = append(users, user)
 	}
 	return users, nil
 }
 
+// GetAllGroups retrieves all groups from the database.
 func GetAllGroups() ([]string, error) {
-	query := "SELECT name FROM auth_group"
-	rows, err := db.Query(query)
+	var groups []struct {
+		Name string `gorm:"column:name"`
+	}
+	err := db.Table("auth_group").Select("name").Find(&groups).Error
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	var groups []string
-	for rows.Next() {
-		var groupName string
-		err := rows.Scan(&groupName)
-		if err != nil {
-			return nil, err
-		}
-		groups = append(groups, groupName)
+	var groupNames []string
+	for _, group := range groups {
+		groupNames = append(groupNames, group.Name)
 	}
-	return groups, nil
+	return groupNames, nil
 }
 
+// GetAllPermissions retrieves all permissions from the database.
 func GetAllPermissions() ([]string, error) {
-	query := "SELECT name FROM auth_permission"
-	rows, err := db.Query(query)
+	var permissions []struct {
+		Name string `gorm:"column:name"`
+	}
+	err := db.Table("auth_permission").Select("name").Find(&permissions).Error
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	var permissions []string
-	for rows.Next() {
-		var permissionName string
-		err := rows.Scan(&permissionName)
-		if err != nil {
-			return nil, err
-		}
-		permissions = append(permissions, permissionName)
+	var permissionNames []string
+	for _, permission := range permissions {
+		permissionNames = append(permissionNames, permission.Name)
 	}
-	return permissions, nil
+	return permissionNames, nil
 }
 
-func GetSessionFromDB(c *fiber.Ctx) (int, string, error) {
+// GetSessionFromDB retrieves session details from the database.
+func GetSessionFromDB(c *fiber.Ctx) (uint, string, error) {
 	sessionID := c.Cookies("hey_sesion")
 	if sessionID == "" {
 		return 0, "", fmt.Errorf("session ID not found in cookie")
 	}
 
-	var userIDStr string
-	var authToken string
-	var expireDate time.Time
-
-	query := `SELECT user_id, auth_token, expire_date FROM eyygo_session WHERE session_key = ?`
-	err := db.QueryRow(query, sessionID).Scan(&userIDStr, &authToken, &expireDate)
+	var session struct {
+		UserID     uint      `gorm:"column:user_id"`
+		AuthToken  string    `gorm:"column:auth_token"`
+		ExpireDate time.Time `gorm:"column:expire_date"`
+	}
+	err := db.Table("eyygo_session").Where("session_key = ?", sessionID).First(&session).Error
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return 0, "", fmt.Errorf("session not found")
-		}
-		return 0, "", err
+		return 0, "", fmt.Errorf("session not found")
 	}
 
-	if expireDate.Before(time.Now()) {
+	if session.ExpireDate.Before(time.Now()) {
 		return 0, "", fmt.Errorf("session expired")
 	}
 
-	// Convert userID from string to int
-	userID, err := strconv.Atoi(userIDStr)
-	if err != nil {
-		return 0, "", fmt.Errorf("invalid user ID in session")
-	}
-
-	return userID, authToken, nil
+	return session.UserID, session.AuthToken, nil
 }
 
+// DeleteSessionFromDB deletes a session from the database.
 func DeleteSessionFromDB(sessionID string) error {
-	query := `DELETE FROM eyygo_session WHERE session_key = ?`
-	_, err := db.Exec(query, sessionID)
+	err := db.Where("session_key = ?", sessionID).Delete(&struct{}{}).Error
 	if err != nil {
 		log.Printf("Error deleting session %s from database: %v", sessionID, err)
 		return err

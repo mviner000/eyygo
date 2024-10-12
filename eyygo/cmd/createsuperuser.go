@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bufio"
-	"database/sql"
 	"fmt"
 	"os"
 	"regexp"
@@ -11,8 +10,10 @@ import (
 	"time"
 
 	"github.com/mviner000/eyymi/eyygo/config"
+	models "github.com/mviner000/eyymi/project_name/posts"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
+	"gorm.io/gorm"
 )
 
 var CreateSuperuserCmd = &cobra.Command{
@@ -23,25 +24,12 @@ var CreateSuperuserCmd = &cobra.Command{
 	},
 }
 
-type User struct {
-	Username    string
-	Email       string
-	Password    string
-	IsSuperuser bool
-	IsStaff     bool
-	IsActive    bool
-	DateJoined  string
-}
-
 func createSuperuser() {
-	dbURL := config.GetDatabaseURL()
-
-	db, err := sql.Open("sqlite3", dbURL)
-	if err != nil {
-		fmt.Printf("Failed to connect to database: %v\n", err)
+	db := config.GetDB()
+	if db == nil {
+		fmt.Println("Failed to connect to database")
 		return
 	}
-	defer db.Close()
 
 	user, err := promptUserDetails(db)
 	if err != nil {
@@ -50,7 +38,7 @@ func createSuperuser() {
 	}
 
 	// Debug: Log the created user details
-	fmt.Printf("Debug: Created user - Username: %s, Email: %s, Password: %s\n", user.Username, user.Email, user.Password)
+	fmt.Printf("Debug: Created user - Username: %s, Email: %s\n", user.Username, user.Email)
 
 	if err := saveUser(user, db); err != nil {
 		fmt.Printf("Error saving user: %v\n", err)
@@ -60,26 +48,24 @@ func createSuperuser() {
 	fmt.Println("Superuser created successfully.")
 }
 
-func promptUserDetails(db *sql.DB) (*User, error) {
-	user := &User{
+func promptUserDetails(db *gorm.DB) (*models.AuthUser, error) {
+	user := &models.AuthUser{
 		IsSuperuser: true,
 		IsStaff:     true,
 		IsActive:    true,
+		DateJoined:  time.Now(),
 	}
 
 	reader := bufio.NewReader(os.Stdin)
 
-	// Prompt for username
 	if err := promptUsername(user, reader, db); err != nil {
 		return nil, err
 	}
 
-	// Prompt for email
 	if err := promptEmail(user, reader, db); err != nil {
 		return nil, err
 	}
 
-	// Prompt for password
 	if err := promptPassword(user); err != nil {
 		return nil, err
 	}
@@ -87,7 +73,7 @@ func promptUserDetails(db *sql.DB) (*User, error) {
 	return user, nil
 }
 
-func promptUsername(user *User, reader *bufio.Reader, db *sql.DB) error {
+func promptUsername(user *models.AuthUser, reader *bufio.Reader, db *gorm.DB) error {
 	for {
 		fmt.Print("Username: ")
 		username, _ := reader.ReadString('\n')
@@ -108,8 +94,7 @@ func promptUsername(user *User, reader *bufio.Reader, db *sql.DB) error {
 	}
 }
 
-func promptEmail(user *User, reader *bufio.Reader, db *sql.DB) error {
-	// Regular expression for basic email validation
+func promptEmail(user *models.AuthUser, reader *bufio.Reader, db *gorm.DB) error {
 	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 
 	for {
@@ -137,7 +122,7 @@ func promptEmail(user *User, reader *bufio.Reader, db *sql.DB) error {
 	}
 }
 
-func promptPassword(user *User) error {
+func promptPassword(user *models.AuthUser) error {
 	for {
 		fmt.Print("Password: ")
 		password, err := term.ReadPassword(int(syscall.Stdin))
@@ -173,40 +158,24 @@ func promptPassword(user *User) error {
 	}
 }
 
-func saveUser(user *User, db *sql.DB) error {
-	// The password is already hashed, so we can use it directly
-	hashedPassword := user.Password
-
-	// Set the current time as the date joined
-	user.DateJoined = time.Now().Format("2006-01-02 15:04:05")
-
-	// Insert the user into the database with the hashed password and date joined
-	_, err := db.Exec(`
-        INSERT INTO auth_user (username, email, password, is_superuser, is_staff, is_active, date_joined)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    `, user.Username, user.Email, hashedPassword, user.IsSuperuser, user.IsStaff, user.IsActive, user.DateJoined)
-	return err
+func saveUser(user *models.AuthUser, db *gorm.DB) error {
+	result := db.Create(user)
+	return result.Error
 }
 
-func checkUsernameExists(username string, db *sql.DB) error {
-	var exists bool
-	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM auth_user WHERE username=?)", username).Scan(&exists)
-	if err != nil {
-		return err
-	}
-	if exists {
+func checkUsernameExists(username string, db *gorm.DB) error {
+	var count int64
+	db.Model(&models.AuthUser{}).Where("username = ?", username).Count(&count)
+	if count > 0 {
 		return fmt.Errorf("username already exists")
 	}
 	return nil
 }
 
-func checkEmailExists(email string, db *sql.DB) error {
-	var exists bool
-	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM auth_user WHERE email=?)", email).Scan(&exists)
-	if err != nil {
-		return err
-	}
-	if exists {
+func checkEmailExists(email string, db *gorm.DB) error {
+	var count int64
+	db.Model(&models.AuthUser{}).Where("email = ?", email).Count(&count)
+	if count > 0 {
 		return fmt.Errorf("email already exists")
 	}
 	return nil
