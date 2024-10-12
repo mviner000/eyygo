@@ -249,8 +249,11 @@ func (mg *MigrationGenerator) generateFieldDefinition(field *schema.Field, field
 		fieldStr += " NOT NULL"
 	}
 
-	if strings.Contains(fieldSQL, "datetime") && (mg.db.Name() == "sqlite" || mg.db.Name() == "sqlite3") {
-		fieldStr = fmt.Sprintf("%s TEXT", field.DBName)
+	// Ensure DATETIME for time.Time fields in SQLite
+	if strings.Contains(fieldSQL, "datetime") {
+		if mg.db.Name() == "sqlite" || mg.db.Name() == "sqlite3" {
+			fieldStr = fmt.Sprintf("%s DATETIME", field.DBName) // Set to DATETIME instead of TEXT
+		}
 	} else if mg.db.Name() == "mysql" && strings.Contains(fieldSQL, "TEXT") {
 		fieldStr = fmt.Sprintf("%s VARCHAR(255)", field.DBName)
 	}
