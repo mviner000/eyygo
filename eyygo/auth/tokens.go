@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -56,8 +55,6 @@ func (g *PasswordResetTokenGenerator) CheckToken(user *models.AuthUser, token st
 		return false
 	}
 	expectedToken := g.makeTokenWithTimestamp(user, int64(ts))
-
-	log.Printf("Token check: User ID: %d, Timestamp: %d, Expected Token: %s, Received Token: %s", user.ID, ts, expectedToken, token)
 	return constantTimeCompare(expectedToken, token)
 }
 

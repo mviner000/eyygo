@@ -16,6 +16,15 @@ import (
 func AuthMiddleware(c *fiber.Ctx) error {
 	log.Printf("AuthMiddleware: Starting authentication check for request: %s %s", c.Method(), c.Path())
 
+	// Check if the current path is "/admin/login"
+	if c.Path() == "/admin/login" {
+		// Set maxAge to 0 to expire the session cookie
+		SetSessionCookie(c, "", time.Now(), 0)
+		DeleteSessionCookie(c)
+		log.Println("AuthMiddleware: Session cookie expired and deleted for login path.")
+		return c.Next()
+	}
+
 	// Retrieve session from the database
 	userIDStr, authToken, err := getSessionFromDB(c)
 	if err != nil {
@@ -65,7 +74,7 @@ func getSessionFromDB(c *fiber.Ctx) (string, string, error) {
 	log.Println("getSessionFromDB: Starting session retrieval")
 
 	// Get session ID from cookie
-	sessionID := c.Cookies("hey_sesion")
+	sessionID := c.Cookies(SessionCookieName)
 	if sessionID == "" {
 		log.Println("getSessionFromDB: Session ID not found in cookie")
 		return "", "", fmt.Errorf("session ID not found in cookie")

@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm"
 
 	models "github.com/mviner000/eyymi/eyygo/admin/models"
+	"github.com/mviner000/eyymi/eyygo/config"
 )
 
 var db *gorm.DB
@@ -87,7 +88,7 @@ func GetAllPermissions() ([]string, error) {
 
 // GetSessionFromDB retrieves session details from the database.
 func GetSessionFromDB(c *fiber.Ctx) (uint, string, error) {
-	sessionID := c.Cookies("hey_sesion")
+	sessionID := c.Cookies(SessionCookieName)
 	if sessionID == "" {
 		return 0, "", fmt.Errorf("session ID not found in cookie")
 	}
@@ -97,6 +98,10 @@ func GetSessionFromDB(c *fiber.Ctx) (uint, string, error) {
 		AuthToken  string    `gorm:"column:auth_token"`
 		ExpireDate time.Time `gorm:"column:expire_date"`
 	}
+
+	// Retrieve the database instance
+	db := config.GetDB() // Assuming you have a function to get the *gorm.DB instance
+
 	err := db.Table("eyygo_session").Where("session_key = ?", sessionID).First(&session).Error
 	if err != nil {
 		return 0, "", fmt.Errorf("session not found")

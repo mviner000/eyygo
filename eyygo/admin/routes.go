@@ -16,6 +16,7 @@ func SetupRoutes(app *fiber.App) {
 	log.Println("Admin: Setting up public routes")
 	adminGroup.Get("/login", func(c *fiber.Ctx) error {
 		log.Println("Admin: LoginForm handler called")
+
 		return LoginForm(c)
 	})
 	adminGroup.Post("/login", func(c *fiber.Ctx) error {

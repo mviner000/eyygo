@@ -84,14 +84,11 @@ func Login(c *fiber.Ctx) error {
 	}
 	log.Printf("Created session for user '%s': sessionID=%s, token=%s", username, sessionID, token)
 
-	// Set the session cookie
-	c.Cookie(&fiber.Cookie{
-		Name:     "hey_sesion",
-		Value:    sessionID,
-		Expires:  expireTime,
-		HTTPOnly: true,
-		Secure:   true,
-	})
+	// Calculate maxAge using time.Until
+	maxAge := int(time.Until(expireTime).Seconds())
+
+	// Set the session cookie using the new utility function
+	auth.SetSessionCookie(c, sessionID, expireTime, maxAge)
 
 	log.Printf("Login successful for user '%s'. Session ID: %s, Auth Token: %s", username, sessionID, token)
 
