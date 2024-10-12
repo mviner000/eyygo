@@ -12,7 +12,7 @@ import (
 	"github.com/mviner000/eyymi/eyygo/germ"
 	"github.com/mviner000/eyymi/eyygo/germ/driver/sqlite"
 	"github.com/mviner000/eyymi/eyygo/registry"
-	models "github.com/mviner000/eyymi/project_name/models"
+	models "github.com/mviner000/eyymi/project_name"
 
 	"github.com/spf13/cobra"
 )

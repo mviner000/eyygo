@@ -30,5 +30,5 @@ CREATE TABLE auth_permission (
     content_type_id INTEGER NOT NULL,
     codename TEXT NOT NULL,
     UNIQUE (content_type_id, codename),
-    FOREIGN KEY (content_type_id) REFERENCES django_content_type(id)
+    FOREIGN KEY (content_type_id) REFERENCES eyygo_content_type(id)
 );
