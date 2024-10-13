@@ -15,6 +15,7 @@ import (
 	"github.com/mviner000/eyymi/eyygo/constants"
 	"github.com/mviner000/eyymi/eyygo/core/decorators"
 	"github.com/mviner000/eyymi/eyygo/reverb"
+	"github.com/mviner000/eyymi/eyygo/shared"
 	"github.com/mviner000/eyymi/project_name"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -106,14 +107,41 @@ func NewApp() *fiber.App {
 
 func customCORS() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		c.Set("Access-Control-Allow-Origin", "*")
-		c.Set("Access-Control-Allow-Methods", "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS")
-		c.Set("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization")
-		c.Set("Access-Control-Allow-Credentials", "true")
+		origin := c.Get("Origin")
+		postmanToken := c.Get("Postman-Token")
 
-		// Handle preflight requests
+		sharedConfig := shared.GetConfig()
+		allowedOrigins := sharedConfig.AllowedOrigins
+		isDevelopment := sharedConfig.Environment == "development"
+
+		isAllowedOrigin := false
+		for _, allowedOrigin := range allowedOrigins {
+			if origin == allowedOrigin {
+				isAllowedOrigin = true
+				break
+			}
+		}
+
+		isPostmanRequest := postmanToken != ""
+
+		if isAllowedOrigin || (isDevelopment && isPostmanRequest) {
+			if isDevelopment && isPostmanRequest {
+				c.Set("Access-Control-Allow-Origin", "*")
+			} else {
+				c.Set("Access-Control-Allow-Origin", origin)
+			}
+
+			c.Set("Access-Control-Allow-Methods", "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS")
+			c.Set("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization, Postman-Token")
+			c.Set("Access-Control-Allow-Credentials", "true")
+		}
+
 		if c.Method() == fiber.MethodOptions {
 			return c.SendStatus(fiber.StatusNoContent)
+		}
+
+		if !isAllowedOrigin && !(isDevelopment && isPostmanRequest) {
+			return fiber.ErrForbidden
 		}
 
 		return c.Next()

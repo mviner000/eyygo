@@ -17,9 +17,11 @@ type DatabaseConfig struct {
 }
 
 type Config struct {
-	SecretKey string
-	Database  DatabaseConfig
-	Debug     bool
+	SecretKey      string
+	Database       DatabaseConfig
+	Debug          bool
+	AllowedOrigins []string
+	Environment    string
 }
 
 func GetConfig() *Config {
@@ -43,4 +45,12 @@ func SetDatabaseConfig(dbConfig DatabaseConfig) {
 
 func SetDebug(debug bool) {
 	GetConfig().Debug = debug
+}
+
+func SetAllowedOrigins(origins []string) {
+	GetConfig().AllowedOrigins = origins
+}
+
+func SetEnvironment(env string) {
+	GetConfig().Environment = env
 }

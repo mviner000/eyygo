@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/joho/godotenv"
 	"github.com/mviner000/eyymi/eyygo/config"
@@ -52,6 +53,10 @@ func LoadSettings() {
 		log.Fatal("Error loading .env file")
 	}
 
+	// Set Environment
+	environment := os.Getenv("NODE_ENV")
+	shared.SetEnvironment(environment)
+
 	dbConfig := shared.DatabaseConfig{
 		Engine:   os.Getenv("DB_ENGINE"),
 		Name:     os.Getenv("DB_NAME"),
@@ -92,6 +97,11 @@ func LoadSettings() {
 		"project_name.posts",
 		"project_name.notes",
 	})
+
+	// Set AllowedOrigins
+	allowedOriginsStr := os.Getenv("ALLOWED_ORIGINS")
+	allowedOrigins := strings.Split(allowedOriginsStr, ",")
+	shared.SetAllowedOrigins(allowedOrigins)
 
 	// Initialize the settings struct
 	AppSettings = SettingsStruct{
