@@ -19,6 +19,8 @@ import (
 	"github.com/mviner000/eyymi/project_name"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 var (
@@ -29,6 +31,40 @@ var (
 // Define an interface that all apps should implement
 type App interface {
 	SetupRoutes(app *fiber.App)
+}
+
+var jwtSecret = []byte(project_name.AppSettings.CSRF.Secret)
+
+type CSRFClaims struct {
+	jwt.RegisteredClaims
+}
+
+func generateCSRFToken() (string, error) {
+	claims := CSRFClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(1 * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString(jwtSecret)
+}
+
+func validateCSRFToken(tokenString string) error {
+	token, err := jwt.ParseWithClaims(tokenString, &CSRFClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return jwtSecret, nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	if !token.Valid {
+		return jwt.ErrSignatureInvalid
+	}
+
+	return nil
 }
 
 func init() {
@@ -83,6 +119,7 @@ func NewApp() *fiber.App {
 
 	setupMiddleware(app)
 	SetupRoutes(app)
+	setupCSRFRoutes(app)
 
 	// Set up WebSocket route
 	app.Get("/ws", websocket.New(func(c *websocket.Conn) {
@@ -162,11 +199,53 @@ func setupMiddleware(app *fiber.App) {
 	// Use custom CORS middleware
 	app.Use(customCORS())
 
+	// CSRF middleware with custom error handler
+	// Replace the existing CSRF middleware with our custom one
+	app.Use(csrfMiddleware())
+
 	// Custom middlewares
 	// app.Use(decorators.RequireHTTPS())
 	app.Use(decorators.Logger())
 	app.Use(decorators.Throttle(100, 60)) // 100 requests per minute
 	app.Use(decorators.DatabaseTransaction(db))
+}
+
+func setupCSRFRoutes(app *fiber.App) {
+	app.Get("/get-csrf-token", func(c *fiber.Ctx) error {
+		token, err := generateCSRFToken()
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to generate CSRF token",
+			})
+		}
+		return c.JSON(fiber.Map{
+			"csrf_token": token,
+		})
+	})
+}
+
+func csrfMiddleware() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		if c.Method() == "GET" || c.Method() == "HEAD" || c.Method() == "OPTIONS" {
+			return c.Next()
+		}
+
+		token := c.Get("X-CSRF-Token")
+		if token == "" {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+				"error": "CSRF token not found in request header",
+			})
+		}
+
+		err := validateCSRFToken(token)
+		if err != nil {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+				"error": "Invalid or expired CSRF token",
+			})
+		}
+
+		return c.Next()
+	}
 }
 
 func setupDevelopmentServer() {

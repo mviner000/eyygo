@@ -19,6 +19,12 @@ type WebSocketConfig struct {
 	Port string
 }
 
+type CSRFConfig struct {
+	Secret    string
+	TokenName string
+	Secure    bool
+}
+
 type SettingsStruct struct {
 	Database         shared.DatabaseConfig
 	Debug            bool
@@ -33,6 +39,7 @@ type SettingsStruct struct {
 	InstalledApps    []string
 	Environment      string
 	IsDevelopment    bool
+	CSRF             CSRFConfig
 }
 
 // Helper function to create app paths
@@ -117,6 +124,11 @@ func LoadSettings() {
 		Database:         dbConfig,
 		Environment:      os.Getenv("ENVIRONMENT"),
 		IsDevelopment:    os.Getenv("ENVIRONMENT") == "development",
+		CSRF: CSRFConfig{
+			Secret:    os.Getenv("CSRF_SECRET"),
+			TokenName: os.Getenv("CSRF_TOKEN_NAME"),
+			Secure:    os.Getenv("CSRF_SECURE") == "true",
+		},
 	}
 
 	// Log loaded settings
