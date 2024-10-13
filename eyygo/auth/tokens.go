@@ -99,9 +99,4 @@ func intToBase36(n int) string {
 	return fmt.Sprintf("%x", n)
 }
 
-// now returns the current time.
-func now() time.Time {
-	return time.Now()
-}
-
 var DefaultTokenGenerator = NewPasswordResetTokenGenerator()

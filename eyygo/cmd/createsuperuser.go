@@ -11,7 +11,9 @@ import (
 
 	models "github.com/mviner000/eyymi/eyygo/admin/models"
 	"github.com/mviner000/eyymi/eyygo/config"
+	"github.com/mviner000/eyymi/eyygo/shared"
 	"github.com/spf13/cobra"
+	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/term"
 	"gorm.io/gorm"
 )
@@ -148,12 +150,14 @@ func promptPassword(user *models.AuthUser) error {
 			continue
 		}
 
-		hashedPassword, err := config.HashPassword(string(password))
+		// Use the shared secret key for password hashing
+		secretKey := []byte(shared.GetSecretKey())
+		hashedPassword, err := bcrypt.GenerateFromPassword(append(password, secretKey...), bcrypt.DefaultCost)
 		if err != nil {
 			return fmt.Errorf("error hashing password: %w", err)
 		}
 
-		user.Password = hashedPassword
+		user.Password = string(hashedPassword)
 		return nil
 	}
 }

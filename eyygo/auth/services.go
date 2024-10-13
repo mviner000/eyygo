@@ -128,3 +128,52 @@ func DeleteSessionFromDB(sessionID string) error {
 	log.Printf("Session %s deleted successfully from database. Rows affected: %d", sessionID, result.RowsAffected)
 	return nil
 }
+
+// GetUserByID retrieves a user by ID from the database
+func GetUserByID(userID uint) (*models.AuthUser, error) {
+	log.Printf("GetUserByID: Retrieving user with ID %d", userID)
+
+	db := config.GetDB()
+	var user models.AuthUser
+	result := db.First(&user, userID)
+	if result.Error != nil {
+		log.Printf("GetUserByID: Error retrieving user by ID %d from database: %v", userID, result.Error)
+		return nil, result.Error
+	}
+
+	log.Printf("GetUserByID: User ID %d (%s) retrieved successfully from database", userID, user.Username)
+	return &user, nil
+}
+
+func getSessionFromDB(c *fiber.Ctx) (string, string, error) {
+	log.Println("getSessionFromDB: Starting session retrieval")
+
+	// Get session ID from cookie
+	sessionID := c.Cookies(SessionCookieName)
+	if sessionID == "" {
+		log.Println("getSessionFromDB: Session ID not found in cookie")
+		return "", "", fmt.Errorf("session ID not found in cookie")
+	}
+	log.Printf("getSessionFromDB: Session ID found: %s", sessionID)
+
+	db := config.GetDB()
+	var session models.Session
+	result := db.Where("session_key = ?", sessionID).First(&session)
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			log.Println("getSessionFromDB: Session not found")
+			return "", "", fmt.Errorf("session not found")
+		}
+		log.Printf("getSessionFromDB: Error querying database: %v", result.Error)
+		return "", "", result.Error
+	}
+
+	// Check if the session is expired
+	if session.ExpireDate.Before(time.Now()) {
+		log.Println("getSessionFromDB: Session found but expired")
+		return "", "", fmt.Errorf("session expired")
+	}
+
+	log.Printf("getSessionFromDB: Session retrieved for user ID: %d, Token: %s", session.UserID, session.AuthToken)
+	return fmt.Sprintf("%d", session.UserID), session.AuthToken, nil
+}

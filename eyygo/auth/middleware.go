@@ -7,10 +7,95 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v5"
+
 	models "github.com/mviner000/eyymi/eyygo/admin/models"
 	"github.com/mviner000/eyymi/eyygo/config"
-	"gorm.io/gorm"
+	"github.com/mviner000/eyymi/eyygo/shared"
 )
+
+var JwtSecret []byte
+
+func InitJWTSecret() {
+	JwtSecret = []byte(shared.GetSecretKey())
+}
+
+func JWTMiddleware() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		// Get the Authorization header
+		authHeader := c.Get("Authorization")
+
+		// Check if the header is empty or doesn't start with "Bearer "
+		if authHeader == "" || len(authHeader) < 7 || authHeader[:7] != "Bearer " {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Invalid Authorization header",
+			})
+		}
+
+		// Extract the token
+		tokenString := authHeader[7:]
+
+		// Parse and validate the token
+		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			// Validate the signing method
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
+			return JwtSecret, nil
+		})
+
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Invalid token",
+			})
+		}
+
+		// Check if the token is valid and extract claims
+		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			// Check token expiration
+			if exp, ok := claims["exp"].(float64); ok {
+				if time.Now().Unix() > int64(exp) {
+					return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+						"error": "Token expired",
+					})
+				}
+			}
+
+			// Extract user ID from claims
+			userID, ok := claims["user_id"].(float64)
+			if !ok {
+				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+					"error": "Invalid token claims",
+				})
+			}
+
+			// Fetch user from database
+			db := config.GetDB()
+			var user models.AuthUser
+			if err := db.First(&user, uint(userID)).Error; err != nil {
+				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+					"error": "User not found",
+				})
+			}
+
+			// Check if user is active
+			if !user.IsActive {
+				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+					"error": "User is inactive",
+				})
+			}
+
+			// Store user in context for later use
+			c.Locals("user", user)
+
+			return c.Next()
+		}
+
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Invalid token",
+		})
+	}
+}
 
 // AuthMiddleware checks if the user is authenticated
 func AuthMiddleware(c *fiber.Ctx) error {
@@ -68,53 +153,4 @@ func AuthMiddleware(c *fiber.Ctx) error {
 	// All checks passed, proceed to the next handler
 	log.Println("AuthMiddleware: Authentication successful, proceeding to next handler")
 	return c.Next()
-}
-
-func getSessionFromDB(c *fiber.Ctx) (string, string, error) {
-	log.Println("getSessionFromDB: Starting session retrieval")
-
-	// Get session ID from cookie
-	sessionID := c.Cookies(SessionCookieName)
-	if sessionID == "" {
-		log.Println("getSessionFromDB: Session ID not found in cookie")
-		return "", "", fmt.Errorf("session ID not found in cookie")
-	}
-	log.Printf("getSessionFromDB: Session ID found: %s", sessionID)
-
-	db := config.GetDB()
-	var session models.Session
-	result := db.Where("session_key = ?", sessionID).First(&session)
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			log.Println("getSessionFromDB: Session not found")
-			return "", "", fmt.Errorf("session not found")
-		}
-		log.Printf("getSessionFromDB: Error querying database: %v", result.Error)
-		return "", "", result.Error
-	}
-
-	// Check if the session is expired
-	if session.ExpireDate.Before(time.Now()) {
-		log.Println("getSessionFromDB: Session found but expired")
-		return "", "", fmt.Errorf("session expired")
-	}
-
-	log.Printf("getSessionFromDB: Session retrieved for user ID: %d, Token: %s", session.UserID, session.AuthToken)
-	return fmt.Sprintf("%d", session.UserID), session.AuthToken, nil
-}
-
-// GetUserByID retrieves a user by ID from the database
-func GetUserByID(userID uint) (*models.AuthUser, error) {
-	log.Printf("GetUserByID: Retrieving user with ID %d", userID)
-
-	db := config.GetDB()
-	var user models.AuthUser
-	result := db.First(&user, userID)
-	if result.Error != nil {
-		log.Printf("GetUserByID: Error retrieving user by ID %d from database: %v", userID, result.Error)
-		return nil, result.Error
-	}
-
-	log.Printf("GetUserByID: User ID %d (%s) retrieved successfully from database", userID, user.Username)
-	return &user, nil
 }

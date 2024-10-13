@@ -3,12 +3,16 @@ package notes
 
 import (
 	"github.com/gofiber/fiber/v2"
+	auth "github.com/mviner000/eyymi/eyygo/auth"
 )
 
 // SetupNoteRoutes sets up all the note-related routes under the provided group
 func SetupNoteRoutes(app fiber.Router) {
 	// Apply JWT middleware to all note routes
-	app.Use(JWTMiddleware())
+
+	// Initialize the secret key for JWT verification
+	auth.InitJWTSecret()
+	app.Use(auth.JWTMiddleware())
 
 	// CRUD operations for notes
 	app.Post("/", createNote)      // Create a new note
