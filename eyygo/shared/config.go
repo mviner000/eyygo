@@ -1,5 +1,3 @@
-// File: shared/config.go
-
 package shared
 
 import "sync"
@@ -33,6 +31,10 @@ func GetConfig() *Config {
 
 func SetSecretKey(key string) {
 	GetConfig().SecretKey = key
+}
+
+func GetSecretKey() string {
+	return GetConfig().SecretKey
 }
 
 func SetDatabaseConfig(dbConfig DatabaseConfig) {

@@ -8,6 +8,10 @@ import (
 
 // SetupAPIRoutes sets up all the API routes under the /api prefix
 func SetupAPIRoutes(app *fiber.App) {
+
+	// Initialize the secret key for JWT verification
+	notes.InitJWTSecret()
+
 	// Group all API routes under /api
 	apiGroup := app.Group("/api")
 

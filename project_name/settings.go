@@ -1,9 +1,12 @@
 package project_name
 
 import (
+	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
+	"github.com/joho/godotenv"
 	"github.com/mviner000/eyymi/eyygo/config"
 	"github.com/mviner000/eyymi/eyygo/shared"
 	"github.com/mviner000/eyymi/eyygo/utils"
@@ -36,8 +39,19 @@ func createAppPaths(apps []string) []string {
 	return append([]string{}, apps...)
 }
 
+// Logger function to print bold green text
+func logSuccess(message string) {
+	fmt.Printf("\033[1;32m%s\033[0m\n", message) // \033[1;32m is for bold green
+}
+
 // LoadSettings initializes application settings
 func LoadSettings() {
+	// Load environment variables from the .env file using godotenv
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
 	dbConfig := shared.DatabaseConfig{
 		Engine:   os.Getenv("DB_ENGINE"),
 		Name:     os.Getenv("DB_NAME"),
@@ -49,7 +63,20 @@ func LoadSettings() {
 	debug := os.Getenv("DEBUG") == "true"
 
 	// Initialize the shared config
-	shared.SetSecretKey(os.Getenv("SECRET_KEY"))
+	secretKey := os.Getenv("SECRET_KEY")
+	if secretKey == "" {
+		log.Fatal("SECRET_KEY is not set")
+	}
+
+	// Log the loaded secret key
+	log.Printf("Loaded Secret Key: %s\n", os.Getenv("SECRET_KEY"))
+
+	// Force log the SECRET_KEY for debugging
+	fmt.Printf("\033[1;31m[DEBUG] SECRET_KEY: %s\033[0m\n", secretKey) // Prints in bold red
+
+	shared.SetSecretKey(secretKey)
+	logSuccess("SECRET_KEY successfully loaded")
+
 	shared.SetDatabaseConfig(dbConfig)
 	shared.SetDebug(debug)
 
