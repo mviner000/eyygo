@@ -5,6 +5,7 @@ import (
 
 	models "github.com/mviner000/eyymi/eyygo/admin/models"
 	"github.com/mviner000/eyymi/eyygo/registry"
+	notes "github.com/mviner000/eyymi/project_name/notes"
 )
 
 // Register models in a single call
@@ -26,6 +27,8 @@ func RegisterModels() {
 		&models.AuthPermission{},
 		&models.EyygoContentType{},
 		&models.Session{},
+
+		&notes.Note{},
 	)
 	fmt.Println(registry.GetRegisteredModels())
 }

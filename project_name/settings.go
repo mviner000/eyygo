@@ -63,6 +63,7 @@ func LoadSettings() {
 		"eyygo.auth",
 		"eyygo.contenttypes",
 		"project_name.posts",
+		"project_name.notes",
 	})
 
 	// Initialize the settings struct
