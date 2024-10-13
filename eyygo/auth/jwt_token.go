@@ -67,8 +67,9 @@ func GenerateTokenPairHandler(c *fiber.Ctx) error {
 		})
 	}
 
-	// Verify password
-	if !verifyPassword(user.Password, body.Password) {
+	// Verify password using the new function
+	match, err := VerifyPassword(user.Password, body.Password) // Update to your new function
+	if err != nil || !match {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Invalid username or password",
 		})
@@ -97,10 +98,10 @@ func GenerateTokenPairHandler(c *fiber.Ctx) error {
 	})
 }
 
-func verifyPassword(hashedPassword, password string) bool {
+func VerifyPassword(hashedPassword, password string) (bool, error) {
 	secretKey := []byte(shared.GetSecretKey())
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), append([]byte(password), secretKey...))
-	return err == nil
+	return err == nil, err
 }
 
 // Function to hash password (for use during user creation or password change)

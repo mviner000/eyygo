@@ -1,102 +1,71 @@
 package auth
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/base64"
 	"fmt"
-	"strings"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	models "github.com/mviner000/eyymi/eyygo/admin/models"
 	"github.com/mviner000/eyymi/eyygo/shared"
 )
 
 // Configuration constants
 const (
-	keySalt              = "dfdsfsdfdrato"
-	passwordResetTimeout = 3600 // Example timeout in seconds
+	passwordResetTimeout = 3600 // Example timeout in seconds (1 hour or 60 minutes)
 )
 
 // PasswordResetTokenGenerator handles token generation and validation.
 type PasswordResetTokenGenerator struct {
-	secret string
+	secretKey []byte
 }
 
 // NewPasswordResetTokenGenerator creates a new instance of the token generator.
 func NewPasswordResetTokenGenerator() *PasswordResetTokenGenerator {
 	return &PasswordResetTokenGenerator{
-		secret: shared.GetConfig().SecretKey,
+		secretKey: []byte(shared.GetConfig().SecretKey),
 	}
 }
 
-// MakeToken generates a token for the given user.
+// MakeToken generates a JWT token for the given user.
 func (g *PasswordResetTokenGenerator) MakeToken(user *models.AuthUser) (string, error) {
 	if user == nil {
 		return "", fmt.Errorf("cannot generate token for nil user")
 	}
-	timestamp := time.Now().Unix()
-	token := g.makeTokenWithTimestamp(user, timestamp)
-	return token, nil
+
+	claims := jwt.MapClaims{
+		"user_id": user.ID,
+		"email":   user.Email,
+		"exp":     time.Now().Add(time.Second * time.Duration(passwordResetTimeout)).Unix(),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString(g.secretKey)
 }
 
-// CheckToken verifies the validity of the token for the given user.
-func (g *PasswordResetTokenGenerator) CheckToken(user *models.AuthUser, token string) bool {
-	parts := strings.Split(token, "-")
-	if len(parts) != 2 {
-		return false
-	}
-	tsStr := parts[0]
-	ts, err := base36ToInt(tsStr)
+// CheckToken verifies the validity of the JWT token for the given user.
+func (g *PasswordResetTokenGenerator) CheckToken(user *models.AuthUser, tokenString string) bool {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return g.secretKey, nil
+	})
+
 	if err != nil {
 		return false
 	}
-	if time.Now().Unix()-int64(ts) > passwordResetTimeout {
-		return false
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		if float64(user.ID) != claims["user_id"].(float64) {
+			return false
+		}
+		if user.Email != claims["email"].(string) {
+			return false
+		}
+		return true
 	}
-	expectedToken := g.makeTokenWithTimestamp(user, int64(ts))
-	return constantTimeCompare(expectedToken, token)
-}
 
-// makeTokenWithTimestamp creates a token using a timestamp.
-func (g *PasswordResetTokenGenerator) makeTokenWithTimestamp(user *models.AuthUser, timestamp int64) string {
-	tsB36 := intToBase36(int(timestamp))
-	hashValue := g.makeHashValue(user, timestamp)
-	hashString := g.saltedHMAC(keySalt, hashValue, g.secret)
-	token := fmt.Sprintf("%s-%s", tsB36, hashString[:len(hashString)/2])
-	return token
-}
-
-// makeHashValue generates a hash value based on user details and timestamp.
-func (g *PasswordResetTokenGenerator) makeHashValue(user *models.AuthUser, timestamp int64) string {
-	return fmt.Sprintf("%d%s%d%s", user.ID, user.Password, timestamp, user.Email)
-}
-
-// saltedHMAC performs a salted HMAC operation using SHA-256.
-func (g *PasswordResetTokenGenerator) saltedHMAC(keySalt, value, secret string) string {
-	h := hmac.New(sha256.New, []byte(secret))
-	h.Write([]byte(keySalt + value))
-	return base64.URLEncoding.EncodeToString(h.Sum(nil))
-}
-
-// constantTimeCompare compares two strings in a way that is resistant to timing attacks.
-func constantTimeCompare(a, b string) bool {
-	return hmac.Equal([]byte(a), []byte(b))
-}
-
-// base36ToInt converts a base36 encoded string to an integer.
-func base36ToInt(s string) (int, error) {
-	var n int
-	_, err := fmt.Sscanf(s, "%x", &n)
-	if err != nil {
-		return 0, fmt.Errorf("invalid base36 string: %w", err)
-	}
-	return n, nil
-}
-
-// intToBase36 converts an integer to a base36 encoded string.
-func intToBase36(n int) string {
-	return fmt.Sprintf("%x", n)
+	return false
 }
 
 var DefaultTokenGenerator = NewPasswordResetTokenGenerator()

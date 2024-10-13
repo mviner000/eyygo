@@ -6,17 +6,15 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	models "github.com/mviner000/eyymi/eyygo/admin/models"
 	"github.com/mviner000/eyymi/eyygo/auth"
 	"github.com/mviner000/eyymi/eyygo/config"
 	"github.com/mviner000/eyymi/eyygo/http"
-
-	models "github.com/mviner000/eyymi/eyygo/admin/models"
 )
 
 func LoginForm(c *fiber.Ctx) error {
 	log.Println("LoginForm function called")
 	errorMessage := c.Query("error")
-
 	// Check if it's an HTMX request
 	if c.Get("HX-Request") == "true" {
 		log.Println("HTMX request detected")
@@ -25,7 +23,6 @@ func LoginForm(c *fiber.Ctx) error {
 			"Error": errorMessage,
 		}, "eyygo/admin/templates/login_form.html").Render(c)
 	}
-
 	log.Println("Rendering full login page")
 	// Render the full page with layout
 	return http.HttpResponseHTMX(fiber.Map{
@@ -46,7 +43,8 @@ func Login(c *fiber.Ctx) error {
 		}, nil).Render(c)
 	}
 
-	match, err := config.CheckPasswordHash(password, authUser.Password)
+	// Use the password verification method
+	match, err := auth.VerifyPassword(authUser.Password, password)
 	if err != nil || !match {
 		log.Printf("Login attempt failed for user '%s': invalid password", username)
 		return http.HttpResponseUnauthorized(fiber.Map{
@@ -54,44 +52,41 @@ func Login(c *fiber.Ctx) error {
 		}, nil).Render(c)
 	}
 
+	// Use the JWT token generator
+	tokenGenerator := auth.NewPasswordResetTokenGenerator()
 	token, err := tokenGenerator.MakeToken(authUser)
-
 	if err != nil {
-		log.Printf("Failed to generate authentication token for user '%s': %v", username, err)
+		log.Printf("Failed to generate JWT token for user '%s': %v", username, err)
 		return http.HttpResponseServerError("Failed to generate authentication token", nil).Render(c)
 	}
-	log.Printf("Generated token for user '%s': %s", username, token)
+	log.Printf("Generated JWT token for user '%s'", username)
 
 	// Update last_login in the database
 	if err := auth.UpdateLastLogin(authUser.ID); err != nil {
 		log.Printf("Failed to update last login for user %s: %v", username, err)
 	}
 
-	// Create session
+	// Create database session
 	sessionID := generateSessionID()
 	expireTime := time.Now().Add(24 * time.Hour)
-
 	session := models.Session{
 		SessionKey: sessionID,
-		UserID:     uint(authUser.ID), // Convert int to uint
+		UserID:     uint(authUser.ID),
 		AuthToken:  token,
 		ExpireDate: expireTime,
 	}
-
 	if err := config.GetDB().Create(&session).Error; err != nil {
 		log.Printf("Failed to create session for user '%s': %v", username, err)
 		return http.HttpResponseServerError("Failed to create session", nil).Render(c)
 	}
-	log.Printf("Created session for user '%s': sessionID=%s, token=%s", username, sessionID, token)
+	log.Printf("Created session for user '%s': sessionID=%s", username, sessionID)
 
 	// Calculate maxAge using time.Until
 	maxAge := int(time.Until(expireTime).Seconds())
-
-	// Set the session cookie using the new utility function
+	// Set the browser client session cookie using the utility function
 	auth.SetSessionCookie(c, sessionID, expireTime, maxAge)
 
-	log.Printf("Login successful for user '%s'. Session ID: %s, Auth Token: %s", username, sessionID, token)
-
+	log.Printf("Login successful for user '%s'. Session ID: %s", username, sessionID)
 	return c.SendString(http.WindowReload("/admin/dashboard"))
 }
 
