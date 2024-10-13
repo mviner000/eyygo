@@ -7,17 +7,12 @@ import (
 
 // SetupNoteRoutes sets up all the note-related routes under the provided group
 func SetupNoteRoutes(app fiber.Router) {
-	// Public Note Routes
+	// Apply JWT middleware to all note routes
+	app.Use(JWTMiddleware())
 
-	// List all notes
-	app.Get("/", listNotes)
-
-	// Retrieves a note by its ID
-	app.Get("/:id", getNoteByID)
-
-	// Create Note Route
-	app.Post("/", createNote)
-
-	// Delete Note Route
-	app.Delete("/:id", deleteNote)
+	// CRUD operations for notes
+	app.Post("/", createNote)      // Create a new note
+	app.Get("/", listNotes)        // List all notes
+	app.Get("/:id", getNoteByID)   // Retrieve a note by its ID
+	app.Delete("/:id", deleteNote) // Delete a note
 }
