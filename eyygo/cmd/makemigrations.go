@@ -12,7 +12,6 @@ import (
 	"github.com/mviner000/eyymi/eyygo/germ"
 	"github.com/mviner000/eyymi/eyygo/germ/driver/sqlite"
 	"github.com/mviner000/eyymi/eyygo/registry"
-	models "github.com/mviner000/eyymi/project_name"
 
 	"github.com/spf13/cobra"
 )
@@ -22,7 +21,11 @@ var MakeMigrationCmd = &cobra.Command{
 	Short: "Create a new migration file",
 	Run: func(cmd *cobra.Command, args []string) {
 
-		models.RegisterModels() // Registering models
+		// Get registered model names
+		modelNames := conf.GetRegisteredModelNames()
+		if len(modelNames) == 0 {
+			log.Fatalf("No registered models found")
+		}
 
 		log.Println("Creating new migration file...")
 
@@ -97,7 +100,7 @@ func generateMigrationContent(db *germ.DB) (string, error) {
 }
 
 func createMigrationFile(content string) (string, error) {
-	migrationsDir := filepath.Join("project_name", "models", "migrations")
+	migrationsDir := filepath.Join(conf.GetFullProjectName(), "models", "migrations")
 
 	if err := os.MkdirAll(migrationsDir, os.ModePerm); err != nil {
 		return "", err

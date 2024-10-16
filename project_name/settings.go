@@ -13,6 +13,10 @@ import (
 	"github.com/mviner000/eyymi/eyygo/utils"
 )
 
+const (
+	FullProjectName = "project_name"
+)
+
 var AppSettings SettingsStruct
 
 type WebSocketConfig struct {
@@ -40,6 +44,7 @@ type SettingsStruct struct {
 	Environment      string
 	IsDevelopment    bool
 	CSRF             CSRFConfig
+	FullProjectName  string
 }
 
 // Helper function to create app paths
@@ -112,6 +117,7 @@ func LoadSettings() {
 
 	// Initialize the settings struct
 	AppSettings = SettingsStruct{
+		FullProjectName:  FullProjectName,
 		TemplateBasePath: filepath.Join(projectRoot, os.Getenv("TEMPLATE_BASE_PATH")),
 		InstalledApps:    installedApps,
 		WebSocket:        WebSocketConfig{Port: os.Getenv("WS_PORT")},

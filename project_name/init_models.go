@@ -11,16 +11,7 @@ import (
 // Register models in a single call
 func RegisterModels() {
 	registry.Model.Register(
-		// &auth.AuthGroup{},
-		// &auth.AuthPermission{},
-		// &auth.AuthUser{},
-		// &auth.EyygoContentType{},
-		// &models.Role{},
-		// &models.Account{},
-		// &models.Post{},
-		// &models.Comment{},
-		// &models.Follower{},
-		// &models.Like{},
+
 		&models.AuthUser{},
 		&models.AuthGroup{},
 		&models.AdminLog{},

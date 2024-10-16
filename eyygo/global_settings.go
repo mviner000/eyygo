@@ -2,10 +2,12 @@ package conf
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/mviner000/eyymi/eyygo/registry"
 	"github.com/mviner000/eyymi/project_name"
 )
 
 var Settings *project_name.SettingsStruct
+var modelsRegistered bool
 
 func init() {
 	LoadSettings()
@@ -20,6 +22,37 @@ func LoadSettings() {
 // GetSettings returns the global settings
 func GetSettings() *project_name.SettingsStruct {
 	return Settings
+}
+
+// GetFullProjectName returns the FullProjectName directly
+func GetFullProjectName() string {
+	return Settings.FullProjectName
+}
+
+// EnsureModelsRegistered ensures that models are registered
+func EnsureModelsRegistered() {
+	if !modelsRegistered {
+		project_name.RegisterModels()
+		modelsRegistered = true
+	}
+}
+
+// GetRegisteredModelNames returns the names of all registered models
+func GetRegisteredModelNames() []string {
+	EnsureModelsRegistered()
+	return registry.GetRegisteredModelNames()
+}
+
+// GetRegisteredModel returns a registered model by name
+func GetRegisteredModel(name string) (interface{}, bool) {
+	EnsureModelsRegistered()
+	return registry.GetRegisteredModel(name)
+}
+
+// GetRegisteredModelsInfo returns a string with information about all registered models
+func GetRegisteredModelsInfo() string {
+	EnsureModelsRegistered()
+	return registry.GetRegisteredModels()
 }
 
 // App interface definition
