@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/mviner000/eyymi/eyygo/config"
+	"github.com/mviner000/eyymi/src/config"
 	"gorm.io/gorm"
 )
 

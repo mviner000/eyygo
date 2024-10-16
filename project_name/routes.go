@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/mviner000/eyymi/eyygo/auth"
+	"github.com/mviner000/eyymi/src/auth"
 )
 
 // AppName implements the App interface

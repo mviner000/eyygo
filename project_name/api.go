@@ -3,8 +3,8 @@ package project_name
 
 import (
 	"github.com/gofiber/fiber/v2"
-	auth "github.com/mviner000/eyymi/eyygo/auth"
 	"github.com/mviner000/eyymi/project_name/notes"
+	auth "github.com/mviner000/eyymi/src/auth"
 )
 
 // SetupAPIRoutes sets up all the API routes under the /api prefix

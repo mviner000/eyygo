@@ -3,9 +3,9 @@ package project_name
 import (
 	"fmt"
 
-	models "github.com/mviner000/eyymi/eyygo/admin/models"
-	"github.com/mviner000/eyymi/eyygo/registry"
 	notes "github.com/mviner000/eyymi/project_name/notes"
+	models "github.com/mviner000/eyymi/src/admin/models"
+	"github.com/mviner000/eyymi/src/registry"
 )
 
 // Register models in a single call
