@@ -22,7 +22,6 @@ var MigrateCmd = &cobra.Command{
 }
 
 func migrate() {
-	// Use the project_name.AppSettings to get the database URL
 	dbURL := config.GetDatabaseURL()
 
 	db, err := sql.Open("sqlite3", dbURL)

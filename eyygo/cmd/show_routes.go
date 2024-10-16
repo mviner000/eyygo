@@ -4,8 +4,9 @@ import (
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
+	conf "github.com/mviner000/eyymi/eyygo"
 	"github.com/mviner000/eyymi/eyygo/core"
-	"github.com/mviner000/eyymi/project_name"
+
 	"github.com/spf13/cobra"
 )
 
@@ -32,7 +33,7 @@ var ShowRoutesCmd = &cobra.Command{
 
 func isAppInstalled(appName string) bool {
 	// Check if the app is installed
-	for _, installedApp := range project_name.AppSettings.InstalledApps {
+	for _, installedApp := range conf.GetSettings().InstalledApps {
 		if installedApp == appName {
 			return true
 		}

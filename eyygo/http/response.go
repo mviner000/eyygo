@@ -9,7 +9,7 @@ import (
 
 	"github.com/aymerick/raymond"
 	"github.com/gofiber/fiber/v2"
-	"github.com/mviner000/eyymi/project_name"
+	conf "github.com/mviner000/eyymi/eyygo"
 )
 
 type Response struct {
@@ -45,10 +45,10 @@ func (r *Response) Render(c *fiber.Ctx) error {
 	}
 
 	if r.Template != "" {
-		templatePath := filepath.Join(project_name.AppSettings.TemplateBasePath, r.Template)
+		templatePath := filepath.Join(conf.GetSettings().TemplateBasePath, r.Template)
 		layoutPath := ""
 		if r.Layout != "" {
-			layoutPath = filepath.Join(project_name.AppSettings.TemplateBasePath, r.Layout)
+			layoutPath = filepath.Join(conf.GetSettings().TemplateBasePath, r.Layout)
 		}
 
 		content, err := renderTemplate(templatePath, layoutPath, r.Body)

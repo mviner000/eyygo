@@ -8,7 +8,8 @@ import (
 	"github.com/mviner000/eyymi/eyygo/admin"
 	"github.com/mviner000/eyymi/eyygo/constants"
 	"github.com/mviner000/eyymi/eyygo/monitor"
-	"github.com/mviner000/eyymi/project_name"
+
+	conf "github.com/mviner000/eyymi/eyygo"
 )
 
 var exampleapp App = nil
@@ -20,10 +21,10 @@ var INSTALLED_APPS = map[string]bool{
 	// Add more apps as needed
 }
 
-func getAppPackage(appName string) (App, error) {
+func getAppPackage(appName string) (conf.App, error) {
 	switch appName {
 	case "project_name":
-		return &project_name.AppName{}, nil
+		return conf.NewApp(), nil
 	case "exampleapp":
 		if exampleapp != nil {
 			return exampleapp, nil
@@ -37,7 +38,7 @@ func getAppPackage(appName string) (App, error) {
 func setupAppRoutes(app *fiber.App, appName string) {
 	appPackage, err := getAppPackage(appName)
 	if err != nil {
-		if project_name.AppSettings.Debug {
+		if conf.GetSettings().Debug {
 			appLogger.Printf("Error setting up app: %v", err)
 		}
 		return
@@ -45,16 +46,16 @@ func setupAppRoutes(app *fiber.App, appName string) {
 
 	if appPackage != nil {
 		appPackage.SetupRoutes(app)
-		if project_name.AppSettings.Debug {
+		if conf.GetSettings().Debug {
 			appLogger.Printf("Routes set up for app: %s", appName)
 		}
-	} else if project_name.AppSettings.Debug {
+	} else if conf.GetSettings().Debug {
 		appLogger.Printf("Failed to set up routes for app: %s", appName)
 	}
 }
 
 func SetupRoutes(app *fiber.App) {
-	if project_name.AppSettings.Debug {
+	if conf.GetSettings().Debug {
 		var appNames []string
 		for appName := range INSTALLED_APPS {
 			appNames = append(appNames, appName)

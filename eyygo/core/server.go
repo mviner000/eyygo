@@ -11,12 +11,12 @@ import (
 	"github.com/gofiber/template/html/v2"
 	"github.com/gofiber/websocket/v2"
 
+	conf "github.com/mviner000/eyymi/eyygo"
 	"github.com/mviner000/eyymi/eyygo/config"
 	"github.com/mviner000/eyymi/eyygo/constants"
 	"github.com/mviner000/eyymi/eyygo/core/decorators"
 	"github.com/mviner000/eyymi/eyygo/reverb"
 	"github.com/mviner000/eyymi/eyygo/shared"
-	"github.com/mviner000/eyymi/project_name"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
@@ -33,7 +33,7 @@ type App interface {
 	SetupRoutes(app *fiber.App)
 }
 
-var jwtSecret = []byte(project_name.AppSettings.CSRF.Secret)
+var jwtSecret = []byte(conf.GetSettings().CSRF.Secret)
 
 type CSRFClaims struct {
 	jwt.RegisteredClaims
@@ -73,25 +73,25 @@ func init() {
 	}
 
 	// Set the default time zone
-	loc, err := time.LoadLocation(project_name.AppSettings.TimeZone)
+	loc, err := time.LoadLocation(conf.GetSettings().TimeZone)
 	if err != nil {
 		appLogger.Fatalf("Invalid time zone: %v", err)
 	}
 	time.Local = loc
 
 	// Log the time zone if DEBUG is true
-	if project_name.AppSettings.Debug {
-		config.DebugLogf("Time zone set to: %s", project_name.AppSettings.TimeZone)
+	if conf.GetSettings().Debug {
+		config.DebugLogf("Time zone set to: %s", conf.GetSettings().TimeZone)
 	}
 
-	db, err = gorm.Open(sqlite.Open(project_name.AppSettings.Database.Name), &gorm.Config{})
+	db, err = gorm.Open(sqlite.Open(conf.GetSettings().Database.Name), &gorm.Config{})
 	if err != nil {
 		appLogger.Fatalf("Failed to connect to database: %v", err)
 	}
 }
 
 func ReloadSettings() {
-	project_name.LoadSettings() // Reload settings using the function from project_name
+	conf.LoadSettings() // Reload the settings
 	log.Println("Settings reloaded")
 }
 
@@ -193,7 +193,7 @@ func setupMiddleware(app *fiber.App) {
 	app.Use(logger.New(logger.Config{
 		Format:     "${time} ${status} - ${method} ${path}\n",
 		TimeFormat: "2006-01-02 15:04:05",
-		TimeZone:   project_name.AppSettings.TimeZone,
+		TimeZone:   conf.GetSettings().TimeZone,
 	}))
 
 	// Use custom CORS middleware
@@ -271,7 +271,7 @@ func setupDevelopmentServer() {
 		reverb.SetupWebSocket(app)
 		SetupRoutes(app)
 
-		if project_name.AppSettings.Debug {
+		if conf.GetSettings().Debug {
 			appLogger.Printf("Development server started on http://127.0.0.1:%s", httpPort)
 		}
 
@@ -292,7 +292,7 @@ func setupDevelopmentServer() {
 		reverb.SetupWebSocket(app)
 		SetupRoutes(app)
 
-		if project_name.AppSettings.Debug {
+		if conf.GetSettings().Debug {
 			appLogger.Printf("WebSocket server started on ws://127.0.0.1:%s", wsPort)
 		}
 
@@ -331,23 +331,23 @@ func setupProductionServer() {
 		reverb.SetupWebSocket(app)
 		SetupRoutes(app)
 
-		certFile := project_name.AppSettings.CertFile
-		keyFile := project_name.AppSettings.KeyFile
+		certFile := conf.GetSettings().CertFile
+		keyFile := conf.GetSettings().KeyFile
 
 		// Check for wildcard in AllowedOrigins
-		for _, origin := range project_name.AppSettings.AllowedOrigins {
+		for _, origin := range conf.GetSettings().AllowedOrigins {
 			if origin == "*" {
 				appLogger.Println(constants.ColorRed + "WARNING: Using wildcard '*' in AllowedOrigins in production is not recommended!" + constants.ColorReset)
 				break
 			}
 		}
 
-		if project_name.AppSettings.Debug {
-			appLogger.Printf("Allowed origins: %v", project_name.AppSettings.AllowedOrigins)
+		if conf.GetSettings().Debug {
+			appLogger.Printf("Allowed origins: %v", conf.GetSettings().AllowedOrigins)
 		}
 
 		if certFile != "" && keyFile != "" {
-			if project_name.AppSettings.Debug {
+			if conf.GetSettings().Debug {
 				appLogger.Printf("Starting HTTPS server on port %s", httpPort)
 			}
 			err := app.ListenTLS(":"+httpPort, certFile, keyFile)
@@ -355,7 +355,7 @@ func setupProductionServer() {
 				appLogger.Fatalf("Failed to start HTTPS server: %v", err)
 			}
 		} else {
-			if project_name.AppSettings.Debug {
+			if conf.GetSettings().Debug {
 				appLogger.Printf("Starting HTTP server on port %s", httpPort)
 			}
 			err := app.Listen(":" + httpPort)
@@ -378,23 +378,23 @@ func setupProductionServer() {
 		reverb.SetupWebSocket(app)
 		SetupRoutes(app)
 
-		certFile := project_name.AppSettings.CertFile
-		keyFile := project_name.AppSettings.KeyFile
+		certFile := conf.GetSettings().CertFile
+		keyFile := conf.GetSettings().KeyFile
 
 		// Check for wildcard in AllowedOrigins
-		for _, origin := range project_name.AppSettings.AllowedOrigins {
+		for _, origin := range conf.GetSettings().AllowedOrigins {
 			if origin == "*" {
 				appLogger.Println(constants.ColorRed + "WARNING: Using wildcard '*' in AllowedOrigins in production is not recommended!" + constants.ColorReset)
 				break
 			}
 		}
 
-		if project_name.AppSettings.Debug {
-			appLogger.Printf("Allowed origins: %v", project_name.AppSettings.AllowedOrigins)
+		if conf.GetSettings().Debug {
+			appLogger.Printf("Allowed origins: %v", conf.GetSettings().AllowedOrigins)
 		}
 
 		if certFile != "" && keyFile != "" {
-			if project_name.AppSettings.Debug {
+			if conf.GetSettings().Debug {
 				appLogger.Printf("Starting HTTPS WebSocket server on port %s", wsPort)
 			}
 			err := app.ListenTLS(":"+wsPort, certFile, keyFile)
@@ -402,7 +402,7 @@ func setupProductionServer() {
 				appLogger.Fatalf("Failed to start HTTPS WebSocket server: %v", err)
 			}
 		} else {
-			if project_name.AppSettings.Debug {
+			if conf.GetSettings().Debug {
 				appLogger.Printf("Starting HTTP WebSocket server on port %s", wsPort)
 			}
 			err := app.Listen(":" + wsPort)
