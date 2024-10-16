@@ -1,4 +1,4 @@
-module github.com/mviner000/eyymi
+module github.com/mviner000/eyygo
 
 go 1.23.1
 

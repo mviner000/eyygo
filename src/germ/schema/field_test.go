@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mviner000/eyymi/eyygo/germ"
-	"github.com/mviner000/eyymi/eyygo/germ/schema"
-	"github.com/mviner000/eyymi/eyygo/germ/utils/tests"
+	"github.com/mviner000/eyygo/src/germ"
+	"github.com/mviner000/eyygo/src/germ/schema"
+	"github.com/mviner000/eyygo/src/germ/utils/tests"
 )
 
 func TestFieldValuerAndSetter(t *testing.T) {

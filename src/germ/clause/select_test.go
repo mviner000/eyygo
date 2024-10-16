@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/mviner000/eyymi/eyygo/germ/clause"
+	"github.com/mviner000/eyygo/src/germ/clause"
 )
 
 func TestSelect(t *testing.T) {

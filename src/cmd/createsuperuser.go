@@ -9,9 +9,9 @@ import (
 	"syscall"
 	"time"
 
-	models "github.com/mviner000/eyymi/src/admin/models"
-	"github.com/mviner000/eyymi/src/config"
-	"github.com/mviner000/eyymi/src/shared"
+	models "github.com/mviner000/eyygo/src/admin/models"
+	"github.com/mviner000/eyygo/src/config"
+	"github.com/mviner000/eyygo/src/shared"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/term"

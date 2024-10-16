@@ -7,11 +7,11 @@ import (
 	"path/filepath"
 	"time"
 
-	conf "github.com/mviner000/eyymi/src"
-	"github.com/mviner000/eyymi/src/config"
-	"github.com/mviner000/eyymi/src/germ"
-	"github.com/mviner000/eyymi/src/germ/driver/sqlite"
-	"github.com/mviner000/eyymi/src/registry"
+	conf "github.com/mviner000/eyygo/src"
+	"github.com/mviner000/eyygo/src/config"
+	"github.com/mviner000/eyygo/src/germ"
+	"github.com/mviner000/eyygo/src/germ/driver/sqlite"
+	"github.com/mviner000/eyygo/src/registry"
 
 	"github.com/spf13/cobra"
 )

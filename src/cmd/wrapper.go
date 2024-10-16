@@ -4,7 +4,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/mviner000/eyymi/src/germ"
+	"github.com/mviner000/eyygo/src/germ"
 )
 
 type GERMWrapper struct {

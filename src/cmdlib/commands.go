@@ -1,7 +1,7 @@
 package cmdlib
 
 import (
-	"github.com/mviner000/eyymi/src/cmd"
+	"github.com/mviner000/eyygo/src/cmd"
 	"github.com/spf13/cobra"
 )
 

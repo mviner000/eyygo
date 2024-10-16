@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	conf "github.com/mviner000/eyymi/src"
-	"github.com/mviner000/eyymi/src/config"
+	conf "github.com/mviner000/eyygo/src"
+	"github.com/mviner000/eyygo/src/config"
 )
 
 var (

@@ -9,7 +9,7 @@ import (
 
 	"github.com/aymerick/raymond"
 	"github.com/gofiber/fiber/v2"
-	conf "github.com/mviner000/eyymi/src"
+	conf "github.com/mviner000/eyygo/src"
 )
 
 type Response struct {

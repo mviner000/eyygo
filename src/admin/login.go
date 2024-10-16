@@ -6,10 +6,10 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	models "github.com/mviner000/eyymi/src/admin/models"
-	"github.com/mviner000/eyymi/src/auth"
-	"github.com/mviner000/eyymi/src/config"
-	"github.com/mviner000/eyymi/src/http"
+	models "github.com/mviner000/eyygo/src/admin/models"
+	"github.com/mviner000/eyygo/src/auth"
+	"github.com/mviner000/eyygo/src/config"
+	"github.com/mviner000/eyygo/src/http"
 )
 
 func LoginForm(c *fiber.Ctx) error {

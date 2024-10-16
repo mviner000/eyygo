@@ -1,7 +1,7 @@
 package schema
 
 import (
-	"github.com/mviner000/eyymi/src/germ/clause"
+	"github.com/mviner000/eyygo/src/germ/clause"
 )
 
 // ConstraintInterface database constraint interface

@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mviner000/eyymi/src/germ/clause"
-	"github.com/mviner000/eyymi/src/germ/logger"
-	"github.com/mviner000/eyymi/src/germ/schema"
+	"github.com/mviner000/eyygo/src/germ/clause"
+	"github.com/mviner000/eyygo/src/germ/logger"
+	"github.com/mviner000/eyygo/src/germ/schema"
 )
 
 // for Config.cacheStore store PreparedStmtDB key

@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/mviner000/eyymi/src/constants"
+	"github.com/mviner000/eyygo/src/constants"
 )
 
 var debugLogger *log.Logger

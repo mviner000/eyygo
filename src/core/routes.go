@@ -5,11 +5,11 @@ import (
 	"sort"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/mviner000/eyymi/src/admin"
-	"github.com/mviner000/eyymi/src/constants"
-	"github.com/mviner000/eyymi/src/monitor"
+	"github.com/mviner000/eyygo/src/admin"
+	"github.com/mviner000/eyygo/src/constants"
+	"github.com/mviner000/eyygo/src/monitor"
 
-	conf "github.com/mviner000/eyymi/src"
+	conf "github.com/mviner000/eyygo/src"
 )
 
 var exampleapp App = nil

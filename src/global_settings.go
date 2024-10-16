@@ -2,8 +2,8 @@ package conf
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/mviner000/eyymi/project_name"
-	"github.com/mviner000/eyymi/src/registry"
+	"github.com/mviner000/eyygo/project_name"
+	"github.com/mviner000/eyygo/src/registry"
 )
 
 var Settings *project_name.SettingsStruct

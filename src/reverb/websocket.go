@@ -8,7 +8,7 @@ import (
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
 
-	conf "github.com/mviner000/eyymi/src"
+	conf "github.com/mviner000/eyygo/src"
 )
 
 var (

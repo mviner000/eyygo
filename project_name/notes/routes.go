@@ -3,7 +3,7 @@ package notes
 
 import (
 	"github.com/gofiber/fiber/v2"
-	auth "github.com/mviner000/eyymi/src/auth"
+	auth "github.com/mviner000/eyygo/src/auth"
 )
 
 // SetupNoteRoutes sets up all the note-related routes under the provided group

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/mattn/go-sqlite3"
-	"github.com/mviner000/eyymi/src/germ"
+	"github.com/mviner000/eyygo/src/germ"
 )
 
 func TestDialector(t *testing.T) {

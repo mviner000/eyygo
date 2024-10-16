@@ -10,7 +10,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/mviner000/eyymi/src/germ/utils"
+	"github.com/mviner000/eyygo/src/germ/utils"
 )
 
 const (

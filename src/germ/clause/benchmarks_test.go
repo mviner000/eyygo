@@ -4,10 +4,10 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/mviner000/eyymi/eyygo/germ"
-	"github.com/mviner000/eyymi/eyygo/germ/clause"
-	"github.com/mviner000/eyymi/eyygo/germ/schema"
-	"github.com/mviner000/eyymi/eyygo/germ/utils/tests"
+	"github.com/mviner000/eyygo/src/germ"
+	"github.com/mviner000/eyygo/src/germ/clause"
+	"github.com/mviner000/eyygo/src/germ/schema"
+	"github.com/mviner000/eyygo/src/germ/utils/tests"
 )
 
 func BenchmarkSelect(b *testing.B) {

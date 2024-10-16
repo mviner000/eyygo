@@ -2,7 +2,7 @@
 
 package config
 
-import "github.com/mviner000/eyymi/src/shared"
+import "github.com/mviner000/eyygo/src/shared"
 
 // Debuggable interface for debug settings
 type Debuggable interface {

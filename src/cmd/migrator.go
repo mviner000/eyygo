@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	conf "github.com/mviner000/eyymi/src"
-	"github.com/mviner000/eyymi/src/config"
-	"github.com/mviner000/eyymi/src/germ"
-	"github.com/mviner000/eyymi/src/germ/driver/sqlite"
+	conf "github.com/mviner000/eyygo/src"
+	"github.com/mviner000/eyygo/src/config"
+	"github.com/mviner000/eyygo/src/germ"
+	"github.com/mviner000/eyygo/src/germ/driver/sqlite"
 	"github.com/spf13/cobra"
 )
 

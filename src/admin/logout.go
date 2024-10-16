@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/mviner000/eyymi/src/auth"
-	"github.com/mviner000/eyymi/src/http"
+	"github.com/mviner000/eyygo/src/auth"
+	"github.com/mviner000/eyygo/src/http"
 )
 
 func Logout(c *fiber.Ctx) error {

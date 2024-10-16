@@ -3,8 +3,8 @@ package admin
 import (
 	"log"
 
-	"github.com/mviner000/eyymi/src/auth"
-	"github.com/mviner000/eyymi/src/config"
+	"github.com/mviner000/eyygo/src/auth"
+	"github.com/mviner000/eyygo/src/config"
 )
 
 var tokenGenerator *auth.PasswordResetTokenGenerator

@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/mviner000/eyymi/src/shared"
-	"github.com/mviner000/eyymi/src/utils"
+	"github.com/mviner000/eyygo/src/shared"
+	"github.com/mviner000/eyygo/src/utils"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )

@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	models "github.com/mviner000/eyymi/src/admin/models"
-	"github.com/mviner000/eyymi/src/shared"
+	models "github.com/mviner000/eyygo/src/admin/models"
+	"github.com/mviner000/eyygo/src/shared"
 )
 
 // Configuration constants

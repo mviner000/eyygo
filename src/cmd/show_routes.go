@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
-	conf "github.com/mviner000/eyymi/src"
-	"github.com/mviner000/eyymi/src/core"
+	conf "github.com/mviner000/eyygo/src"
+	"github.com/mviner000/eyygo/src/core"
 
 	"github.com/spf13/cobra"
 )

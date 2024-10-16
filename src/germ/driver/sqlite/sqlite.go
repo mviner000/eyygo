@@ -5,14 +5,14 @@ import (
 	"database/sql"
 	"strconv"
 
-	"github.com/mviner000/eyymi/src/germ/callbacks"
+	"github.com/mviner000/eyygo/src/germ/callbacks"
 
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/mviner000/eyymi/src/germ"
-	"github.com/mviner000/eyymi/src/germ/clause"
-	"github.com/mviner000/eyymi/src/germ/logger"
-	"github.com/mviner000/eyymi/src/germ/migrator"
-	"github.com/mviner000/eyymi/src/germ/schema"
+	"github.com/mviner000/eyygo/src/germ"
+	"github.com/mviner000/eyygo/src/germ/clause"
+	"github.com/mviner000/eyygo/src/germ/logger"
+	"github.com/mviner000/eyygo/src/germ/migrator"
+	"github.com/mviner000/eyygo/src/germ/schema"
 )
 
 // DriverName is the default driver name for SQLite.

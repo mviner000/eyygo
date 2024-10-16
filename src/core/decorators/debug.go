@@ -5,7 +5,7 @@ import (
 	"regexp"
 
 	"github.com/gofiber/fiber/v2"
-	conf "github.com/mviner000/eyymi/src"
+	conf "github.com/mviner000/eyygo/src"
 )
 
 var sensitiveParamsRegex = regexp.MustCompile(`(?i)(pass|secret|token|key|api|pw|password)`)

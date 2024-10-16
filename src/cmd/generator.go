@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/mviner000/eyymi/src/germ"
-	"github.com/mviner000/eyymi/src/germ/schema"
+	"github.com/mviner000/eyygo/src/germ"
+	"github.com/mviner000/eyygo/src/germ/schema"
 )
 
 // MigrationGenerator handles the generation of SQL migrations

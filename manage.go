@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
-	conf "github.com/mviner000/eyymi/src"
-	"github.com/mviner000/eyymi/src/cmdlib"
+	conf "github.com/mviner000/eyygo/src"
+	"github.com/mviner000/eyygo/src/cmdlib"
 	"github.com/spf13/cobra"
 )
 

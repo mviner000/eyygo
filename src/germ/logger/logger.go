@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/mviner000/eyymi/src/germ/utils"
+	"github.com/mviner000/eyygo/src/germ/utils"
 )
 
 // ErrRecordNotFound record not found error

@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mviner000/eyymi/src/germ/migrator"
+	"github.com/mviner000/eyygo/src/germ/migrator"
 )
 
 var (

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mviner000/eyymi/src/germ/clause"
-	"github.com/mviner000/eyymi/src/germ/logger"
+	"github.com/mviner000/eyygo/src/germ/clause"
+	"github.com/mviner000/eyygo/src/germ/logger"
 )
 
 type callbackType string

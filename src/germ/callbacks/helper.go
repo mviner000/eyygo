@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/mviner000/eyymi/src/germ"
-	"github.com/mviner000/eyymi/src/germ/clause"
+	"github.com/mviner000/eyygo/src/germ"
+	"github.com/mviner000/eyygo/src/germ/clause"
 )
 
 // ConvertMapToValuesForCreate convert map to values

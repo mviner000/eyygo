@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/jinzhu/now"
-	"github.com/mviner000/eyymi/src/germ/clause"
-	"github.com/mviner000/eyymi/src/germ/utils"
+	"github.com/mviner000/eyygo/src/germ/clause"
+	"github.com/mviner000/eyygo/src/germ/utils"
 )
 
 // special types' reflect type

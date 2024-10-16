@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/mviner000/eyymi/src/germ/clause"
-	"github.com/mviner000/eyymi/src/germ/schema"
-	"github.com/mviner000/eyymi/src/germ/utils"
+	"github.com/mviner000/eyygo/src/germ/clause"
+	"github.com/mviner000/eyygo/src/germ/schema"
+	"github.com/mviner000/eyygo/src/germ/utils"
 )
 
 // Association Mode contains some helper methods to handle relationship things easily.

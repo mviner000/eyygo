@@ -1,6 +1,6 @@
 package callbacks
 
-import "github.com/mviner000/eyymi/src/germ"
+import "github.com/mviner000/eyygo/src/germ"
 
 type BeforeCreateInterface interface {
 	BeforeCreate(*germ.DB) error

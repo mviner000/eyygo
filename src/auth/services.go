@@ -8,8 +8,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 
-	models "github.com/mviner000/eyymi/src/admin/models"
-	"github.com/mviner000/eyymi/src/config"
+	models "github.com/mviner000/eyygo/src/admin/models"
+	"github.com/mviner000/eyygo/src/config"
 )
 
 var db *gorm.DB

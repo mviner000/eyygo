@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mviner000/eyymi/eyygo/germ/schema"
-	"github.com/mviner000/eyymi/eyygo/germ/utils/tests"
+	"github.com/mviner000/eyygo/src/germ/schema"
+	"github.com/mviner000/eyygo/src/germ/utils/tests"
 )
 
 func checkSchema(t *testing.T, s *schema.Schema, v schema.Schema, primaryFields []string) {

@@ -2,7 +2,7 @@ package admin
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/mviner000/eyymi/src/http"
+	"github.com/mviner000/eyygo/src/http"
 )
 
 func UserCreate(c *fiber.Ctx) error {

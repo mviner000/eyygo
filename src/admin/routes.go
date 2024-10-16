@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/mviner000/eyymi/src/auth"
+	"github.com/mviner000/eyygo/src/auth"
 )
 
 // SetupRoutes sets up the admin routes

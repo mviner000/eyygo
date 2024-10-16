@@ -4,10 +4,10 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/mviner000/eyymi/src/germ"
-	"github.com/mviner000/eyymi/src/germ/clause"
-	"github.com/mviner000/eyymi/src/germ/schema"
-	"github.com/mviner000/eyymi/src/germ/utils"
+	"github.com/mviner000/eyygo/src/germ"
+	"github.com/mviner000/eyygo/src/germ/clause"
+	"github.com/mviner000/eyygo/src/germ/schema"
+	"github.com/mviner000/eyygo/src/germ/utils"
 )
 
 func SaveBeforeAssociations(create bool) func(db *germ.DB) {

@@ -1,7 +1,7 @@
 package callbacks
 
 import (
-	"github.com/mviner000/eyymi/src/germ"
+	"github.com/mviner000/eyygo/src/germ"
 )
 
 var (

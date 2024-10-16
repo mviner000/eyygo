@@ -11,12 +11,12 @@ import (
 	"github.com/gofiber/template/html/v2"
 	"github.com/gofiber/websocket/v2"
 
-	conf "github.com/mviner000/eyymi/src"
-	"github.com/mviner000/eyymi/src/config"
-	"github.com/mviner000/eyymi/src/constants"
-	"github.com/mviner000/eyymi/src/core/decorators"
-	"github.com/mviner000/eyymi/src/reverb"
-	"github.com/mviner000/eyymi/src/shared"
+	conf "github.com/mviner000/eyygo/src"
+	"github.com/mviner000/eyygo/src/config"
+	"github.com/mviner000/eyygo/src/constants"
+	"github.com/mviner000/eyygo/src/core/decorators"
+	"github.com/mviner000/eyygo/src/reverb"
+	"github.com/mviner000/eyygo/src/shared"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 

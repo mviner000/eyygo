@@ -4,8 +4,8 @@ import (
 	"log"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/mviner000/eyymi/src/auth"
-	"github.com/mviner000/eyymi/src/http"
+	"github.com/mviner000/eyygo/src/auth"
+	"github.com/mviner000/eyygo/src/http"
 )
 
 const SiteName = "Eyygo Administration"

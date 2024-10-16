@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	"github.com/joho/godotenv"
-	"github.com/mviner000/eyymi/src/config"
-	"github.com/mviner000/eyymi/src/shared"
-	"github.com/mviner000/eyymi/src/utils"
+	"github.com/mviner000/eyygo/src/config"
+	"github.com/mviner000/eyygo/src/shared"
+	"github.com/mviner000/eyygo/src/utils"
 )
 
 const (

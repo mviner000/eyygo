@@ -1,11 +1,11 @@
 package tests
 
 import (
-	"github.com/mviner000/eyymi/eyygo/germ"
-	"github.com/mviner000/eyymi/eyygo/germ/callbacks"
-	"github.com/mviner000/eyymi/eyygo/germ/clause"
-	"github.com/mviner000/eyymi/eyygo/germ/logger"
-	"github.com/mviner000/eyymi/eyygo/germ/schema"
+	"github.com/mviner000/eyygo/src/germ"
+	"github.com/mviner000/eyygo/src/germ/callbacks"
+	"github.com/mviner000/eyygo/src/germ/clause"
+	"github.com/mviner000/eyygo/src/germ/logger"
+	"github.com/mviner000/eyygo/src/germ/schema"
 )
 
 type DummyDialector struct {

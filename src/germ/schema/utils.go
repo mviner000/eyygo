@@ -7,8 +7,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/mviner000/eyymi/src/germ/clause"
-	"github.com/mviner000/eyymi/src/germ/utils"
+	"github.com/mviner000/eyygo/src/germ/clause"
+	"github.com/mviner000/eyygo/src/germ/utils"
 )
 
 var embeddedCacheKey = "embedded_cache_store"

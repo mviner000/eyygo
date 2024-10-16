@@ -2,7 +2,7 @@ package admin
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/mviner000/eyymi/src/auth"
+	"github.com/mviner000/eyygo/src/auth"
 )
 
 func UserList(c *fiber.Ctx) error {

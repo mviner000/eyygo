@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/mviner000/eyymi/src/core"
+	"github.com/mviner000/eyygo/src/core"
 	"github.com/spf13/cobra"
 )
 

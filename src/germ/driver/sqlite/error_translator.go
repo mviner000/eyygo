@@ -3,7 +3,7 @@ package sqlite
 import (
 	"encoding/json"
 
-	"github.com/mviner000/eyymi/src/germ"
+	"github.com/mviner000/eyygo/src/germ"
 )
 
 // The error codes to map sqlite errors to gorm errors, here is a reference about error codes for sqlite https://www.sqlite.org/rescode.html.
