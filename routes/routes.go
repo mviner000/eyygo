@@ -23,7 +23,6 @@ func SetupRoutes(app *fiber.App, authHandler *handlers.AuthHandler, adminHandler
 
 	// Protected admin API routes
 	adminAPI := api.Group("/admin")
-	adminAPI.Use(handlers.AdminMiddleware)
 	setupAdminAPIRoutes(adminAPI, adminHandler)
 }
 
@@ -58,10 +57,10 @@ func setupAPIRoutes(api fiber.Router, authHandler *handlers.AuthHandler) {
 
 // setupAdminAPIRoutes configures protected admin API routes
 func setupAdminAPIRoutes(admin fiber.Router, adminHandler *handlers.AdminHandler) {
-	// User management
-	admin.Get("/users", adminHandler.ListUsers)
-	admin.Put("/users/:id", adminHandler.UpdateUser)
-	admin.Delete("/users/:id", handlers.SuperUserMiddleware, adminHandler.DeleteUser)
-
-	// Additional admin routes can be added here
+	admin.Get("/models", adminHandler.ListModels)
+	admin.Get("/models/:model", adminHandler.ListModelEntries)
+	admin.Get("/models/:model/:id", adminHandler.GetModelEntry)
+	admin.Post("/models/:model", adminHandler.CreateModelEntry)
+	admin.Put("/models/:model/:id", adminHandler.UpdateModelEntry)
+	admin.Delete("/models/:model/:id", adminHandler.DeleteModelEntry)
 }

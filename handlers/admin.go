@@ -2,123 +2,166 @@
 package handlers
 
 import (
+	"reflect"
+
 	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt/v4"
-	"github.com/mviner000/eyygo/models"
+	"github.com/mviner000/eyygo/admin"
 	"gorm.io/gorm"
 )
 
 type AdminHandler struct {
-	DB *gorm.DB
+	db *gorm.DB
 }
 
 func NewAdminHandler(db *gorm.DB) *AdminHandler {
-	return &AdminHandler{DB: db}
+	return &AdminHandler{db: db}
 }
 
-// ListUsers returns all users (with pagination)
-func (h *AdminHandler) ListUsers(c *fiber.Ctx) error {
-	var users []models.User
+// ListModels returns all registered models in the admin interface
+func (h *AdminHandler) ListModels(c *fiber.Ctx) error {
+	models := admin.Site.GetRegisteredModels()
+	return c.JSON(fiber.Map{
+		"models": models,
+	})
+}
+
+// ListModelEntries returns paginated entries for a specific model
+func (h *AdminHandler) ListModelEntries(c *fiber.Ctx) error {
+	modelName := c.Params("model")
 	page := c.QueryInt("page", 1)
-	limit := c.QueryInt("limit", 10)
-	offset := (page - 1) * limit
+	perPage := c.QueryInt("per_page", 10)
 
-	query := h.DB.Model(&models.User{})
+	modelAdmin, exists := admin.Site.GetModelAdmin(modelName)
+	if !exists {
+		return c.Status(404).JSON(fiber.Map{
+			"error": "Model not found",
+		})
+	}
 
-	var total int64
-	query.Count(&total)
+	var results []interface{}
+	var count int64
 
-	if err := query.Offset(offset).Limit(limit).Find(&users).Error; err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Could not fetch users",
+	query := modelAdmin.DB.Model(modelAdmin.Model)
+	query.Count(&count)
+
+	offset := (page - 1) * perPage
+	err := query.Offset(offset).Limit(perPage).Find(&results).Error
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"error": "Failed to fetch entries",
 		})
 	}
 
 	return c.JSON(fiber.Map{
-		"users": users,
-		"total": total,
-		"page":  page,
-		"limit": limit,
+		"data":        results,
+		"total":       count,
+		"page":        page,
+		"total_pages": (count + int64(perPage) - 1) / int64(perPage),
 	})
 }
 
-// CreateUser creates a new user
-func (h *AdminHandler) CreateUser(c *fiber.Ctx) error {
-	user := new(models.User)
-	if err := c.BodyParser(user); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Could not parse user data",
+// GetModelEntry returns a specific model entry
+func (h *AdminHandler) GetModelEntry(c *fiber.Ctx) error {
+	modelName := c.Params("model")
+	id := c.Params("id")
+
+	modelAdmin, exists := admin.Site.GetModelAdmin(modelName)
+	if !exists {
+		return c.Status(404).JSON(fiber.Map{
+			"error": "Model not found",
 		})
 	}
 
-	if err := h.DB.Create(user).Error; err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Could not create user",
+	var result interface{}
+	err := modelAdmin.DB.First(&result, id).Error
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{
+			"error": "Entry not found",
 		})
 	}
 
-	return c.JSON(user)
+	return c.JSON(result)
 }
 
-// UpdateUser updates user details
-func (h *AdminHandler) UpdateUser(c *fiber.Ctx) error {
-	userID := c.Params("id")
-	user := new(models.User)
+// CreateModelEntry creates a new model entry
+func (h *AdminHandler) CreateModelEntry(c *fiber.Ctx) error {
+	modelName := c.Params("model")
 
-	if err := h.DB.First(user, userID).Error; err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "User not found",
+	modelAdmin, exists := admin.Site.GetModelAdmin(modelName)
+	if !exists {
+		return c.Status(404).JSON(fiber.Map{
+			"error": "Model not found",
 		})
 	}
 
-	if err := c.BodyParser(user); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Could not parse user data",
+	entry := reflect.New(reflect.TypeOf(modelAdmin.Model).Elem()).Interface()
+	if err := c.BodyParser(entry); err != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"error": "Invalid request body",
 		})
 	}
 
-	h.DB.Save(user)
-	return c.JSON(user)
+	if err := modelAdmin.DB.Create(entry).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"error": "Failed to create entry",
+		})
+	}
+
+	return c.JSON(entry)
 }
 
-// DeleteUser soft deletes a user
-func (h *AdminHandler) DeleteUser(c *fiber.Ctx) error {
-	userID := c.Params("id")
-	result := h.DB.Delete(&models.User{}, userID)
+// UpdateModelEntry updates a specific model entry
+func (h *AdminHandler) UpdateModelEntry(c *fiber.Ctx) error {
+	modelName := c.Params("model")
+	id := c.Params("id")
 
-	if result.Error != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Could not delete user",
+	modelAdmin, exists := admin.Site.GetModelAdmin(modelName)
+	if !exists {
+		return c.Status(404).JSON(fiber.Map{
+			"error": "Model not found",
 		})
 	}
 
-	return c.SendStatus(fiber.StatusNoContent)
+	entry := reflect.New(reflect.TypeOf(modelAdmin.Model).Elem()).Interface()
+	if err := modelAdmin.DB.First(entry, id).Error; err != nil {
+		return c.Status(404).JSON(fiber.Map{
+			"error": "Entry not found",
+		})
+	}
+
+	if err := c.BodyParser(entry); err != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	if err := modelAdmin.DB.Save(entry).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"error": "Failed to update entry",
+		})
+	}
+
+	return c.JSON(entry)
 }
 
-// AdminMiddleware checks if user is admin
-func AdminMiddleware(c *fiber.Ctx) error {
-	user := c.Locals("user").(*jwt.Token)
-	claims := user.Claims.(jwt.MapClaims)
+// DeleteModelEntry deletes a specific model entry
+func (h *AdminHandler) DeleteModelEntry(c *fiber.Ctx) error {
+	modelName := c.Params("model")
+	id := c.Params("id")
 
-	if !claims["is_superuser"].(bool) && !claims["is_staff"].(bool) {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": "Access denied: Admin privileges required",
+	modelAdmin, exists := admin.Site.GetModelAdmin(modelName)
+	if !exists {
+		return c.Status(404).JSON(fiber.Map{
+			"error": "Model not found",
 		})
 	}
 
-	return c.Next()
-}
-
-// SuperUserMiddleware checks if user is superuser
-func SuperUserMiddleware(c *fiber.Ctx) error {
-	user := c.Locals("user").(*jwt.Token)
-	claims := user.Claims.(jwt.MapClaims)
-
-	if !claims["is_superuser"].(bool) {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": "Access denied: Superuser privileges required",
+	entry := reflect.New(reflect.TypeOf(modelAdmin.Model).Elem()).Interface()
+	if err := modelAdmin.DB.Delete(entry, id).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"error": "Failed to delete entry",
 		})
 	}
 
-	return c.Next()
+	return c.SendStatus(204)
 }

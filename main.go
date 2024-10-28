@@ -55,7 +55,7 @@ func main() {
 	adminHandler := handlers.NewAdminHandler(DB)
 
 	// 5. Auto-migrate the database
-	if err := DB.AutoMigrate(&models.User{}); err != nil {
+	if err := DB.AutoMigrate(&models.User{}, &models.Note{}); err != nil {
 		appLogger.ErrorLogger.Printf("Failed to auto-migrate: %v", err)
 	}
 
