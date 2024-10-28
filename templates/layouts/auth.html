@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} | Admin Panel</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .auth-background {
+            background-image: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+    </style>
+</head>
+<body class="auth-background min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white/95 backdrop-blur-sm shadow-md">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex-shrink-0">
+                    <a href="/" class="text-gray-800 font-bold text-xl">
+                        Admin Panel
+                    </a>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-4 flex items-center space-x-4">
+                        <a href="/help" class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                            Help
+                        </a>
+                        <a href="/contact" class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                            Contact
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="container mx-auto px-4 py-8">
+        <div class="flex justify-center items-center min-h-[calc(100vh-4rem)]">
+            <div class="w-full max-w-md">
+                <!-- Content will be injected here -->
+                {{embed}}
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="fixed bottom-0 w-full bg-white/95 backdrop-blur-sm shadow-upper">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="text-center text-gray-600 text-sm">
+                &copy; {{.CurrentYear}} Admin Panel. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Toast Messages Container -->
+    <div id="toast-container" 
+         class="fixed top-4 right-4 z-50"
+         hx-target="this"
+         hx-swap="innerHTML">
+    </div>
+
+    <script>
+        // Helper function to show toast messages
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            const colors = {
+                success: 'bg-green-500',
+                error: 'bg-red-500',
+                info: 'bg-blue-500',
+                warning: 'bg-yellow-500'
+            };
+
+            toast.className = `${colors[type]} text-white px-6 py-4 rounded-lg shadow-lg mb-4 flex items-center justify-between`;
+            toast.innerHTML = `
+                <span>${message}</span>
+                <button onclick="this.parentElement.remove()" class="ml-4 hover:text-gray-200">×</button>
+            `;
+
+            document.getElementById('toast-container').appendChild(toast);
+            setTimeout(() => toast.remove(), 5000);
+        }
+
+        // Intercept HTMX errors and show toast messages
+        document.body.addEventListener('htmx:responseError', function(evt) {
+            showToast(evt.detail.error || 'An error occurred', 'error');
+        });
+
+        // Show success messages
+        document.body.addEventListener('htmx:afterSuccess', function(evt) {
+            const successMessage = evt.detail.xhr.getResponseHeader('HX-Trigger-Success-Message');
+            if (successMessage) {
+                showToast(successMessage, 'success');
+            }
+        });
+    </script>
+</body>
+</html>

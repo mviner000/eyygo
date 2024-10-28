@@ -1,0 +1,77 @@
+const mainLayout = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}} | Admin Panel</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <!-- Navbar -->
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex-shrink-0">
+                    <span class="text-xl font-bold">Admin Panel</span>
+                </div>
+                <div class="flex items-center">
+                    <button class="text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="flex">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-gray-800 min-h-screen p-4">
+            <nav class="space-y-2">
+                <a href="/dashboard" class="block px-4 py-2 text-gray-200 hover:bg-gray-700 rounded">
+                    <i class="fas fa-home mr-2"></i> Dashboard
+                </a>
+                <a href="/users" class="block px-4 py-2 text-gray-200 hover:bg-gray-700 rounded">
+                    <i class="fas fa-users mr-2"></i> Users
+                </a>
+                <a href="/notes" class="block px-4 py-2 text-gray-200 hover:bg-gray-700 rounded">
+                    <i class="fas fa-sticky-note mr-2"></i> Notes
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Users Card -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-blue-500 bg-opacity-10">
+                            <i class="fas fa-users text-blue-500 text-2xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-gray-500 text-sm">Total Users</h3>
+                            <p class="text-2xl font-semibold">{{.UserCount}}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notes Card -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-green-500 bg-opacity-10">
+                            <i class="fas fa-sticky-note text-green-500 text-2xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-gray-500 text-sm">Total Notes</h3>
+                            <p class="text-2xl font-semibold">{{.NoteCount}}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
