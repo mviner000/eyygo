@@ -18,15 +18,17 @@ func SetupRoutes(app *fiber.App, authHandler *handlers.AuthHandler, adminHandler
 	setupAPIRoutes(api, authHandler)
 
 	// Admin routes
-	admin := api.Group("/admin")
-	admin.Use(handlers.AdminMiddleware)
-	setupAdminRoutes(admin, adminHandler)
+	admin := app.Group("/admin")
+	setupAdminLoginRoutes(admin, authHandler)
+
+	// Protected admin API routes
+	adminAPI := api.Group("/admin")
+	adminAPI.Use(handlers.AdminMiddleware)
+	setupAdminAPIRoutes(adminAPI, adminHandler)
 }
 
 // setupPublicRoutes configures public routes
-func setupPublicRoutes(app *fiber.App, authHandler *handlers.AuthHandler) {
-	app.Post("/auth/login", authHandler.Login)
-
+func setupPublicRoutes(app fiber.Router, authHandler *handlers.AuthHandler) {
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("Hello, World!")
 	})
@@ -37,10 +39,16 @@ func setupPublicRoutes(app *fiber.App, authHandler *handlers.AuthHandler) {
 			"db":     true,
 		})
 	})
+}
 
-	app.Get("/db-test", func(c *fiber.Ctx) error {
-		return c.SendString("Database connection successful!")
+// setupAdminLoginRoutes configures admin login routes
+func setupAdminLoginRoutes(admin fiber.Router, authHandler *handlers.AuthHandler) {
+	admin.Get("/login", func(c *fiber.Ctx) error {
+		return c.Render("admin/login", fiber.Map{
+			"title": "Admin Login",
+		})
 	})
+	admin.Post("/login", authHandler.Login)
 }
 
 // setupAPIRoutes configures protected API routes
@@ -48,10 +56,12 @@ func setupAPIRoutes(api fiber.Router, authHandler *handlers.AuthHandler) {
 	api.Get("/auth/validate", authHandler.ValidateToken)
 }
 
-// setupAdminRoutes configures admin routes
-func setupAdminRoutes(admin fiber.Router, adminHandler *handlers.AdminHandler) {
+// setupAdminAPIRoutes configures protected admin API routes
+func setupAdminAPIRoutes(admin fiber.Router, adminHandler *handlers.AdminHandler) {
+	// User management
 	admin.Get("/users", adminHandler.ListUsers)
-	admin.Post("/users", adminHandler.CreateUser)
 	admin.Put("/users/:id", adminHandler.UpdateUser)
 	admin.Delete("/users/:id", handlers.SuperUserMiddleware, adminHandler.DeleteUser)
+
+	// Additional admin routes can be added here
 }

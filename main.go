@@ -1,3 +1,4 @@
+// main.go
 package main
 
 import (
@@ -67,8 +68,10 @@ func main() {
 	})
 
 	// Global Middleware
+	app.Use(middleware.XFrameOptions())    // Clickjacking protection
 	app.Use(middleware.ConfigureCORS(cfg)) // CORS with config
 	app.Use(middleware.RateLimit())        // Rate limiting
+	app.Use(middleware.SecurityHeaders())  // Additional security headers
 	app.Use(recover.New())                 // Recover from panics
 	app.Use(logger.RequestLogger())        // Request logging
 	app.Use(logger.ErrorLogger())          // Error logging
